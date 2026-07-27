@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { REVEAL_SPEEDS, TIMING, type RevealSpeed } from "@/lib/config";
 
 interface CaseOpeningOptions {
   /** Called once the beat has run and the lid should actually move. */
@@ -8,8 +7,6 @@ interface CaseOpeningOptions {
   readonly onArm: () => void;
   /** End of the beat, however it ended. */
   readonly onDisarm: () => void;
-  readonly reducedMotion: boolean;
-  readonly speed: RevealSpeed;
 }
 
 /**
@@ -23,8 +20,6 @@ export function useCaseOpening({
   onOpen,
   onArm,
   onDisarm,
-  reducedMotion,
-  speed,
 }: CaseOpeningOptions) {
   const [armingCaseId, setArmingCaseId] = useState<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -41,26 +36,23 @@ export function useCaseOpening({
     onDisarm();
   }, [clearTimer, onDisarm]);
 
+  /** `beatMs` is computed by the caller from Tier, Round and settings. */
   const arm = useCallback(
-    (caseId: number) => {
+    (caseId: number, beatMs: number) => {
       // One Case at a time; taps during a beat are ignored.
       if (timer.current) return;
 
       setArmingCaseId(caseId);
       onArm();
 
-      const beat = reducedMotion
-        ? TIMING.reducedMotionBeatMs
-        : TIMING.tensionBeatMs * REVEAL_SPEEDS[speed];
-
       timer.current = setTimeout(() => {
         timer.current = null;
         setArmingCaseId(null);
         onDisarm();
         onOpen(caseId);
-      }, beat);
+      }, beatMs);
     },
-    [onArm, onDisarm, onOpen, reducedMotion, speed],
+    [onArm, onDisarm, onOpen],
   );
 
   useEffect(() => clearTimer, [clearTimer]);

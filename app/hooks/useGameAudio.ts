@@ -8,9 +8,6 @@ export interface AudioSettings {
   readonly volume: number;
 }
 
-const openedCount = (state: GameState) =>
-  state.cases.filter((c) => c.opened).length;
-
 /**
  * Fires cues off changes in game state rather than from click handlers, so a
  * cue cannot get out of step with what the game actually did.
@@ -53,7 +50,13 @@ export function useGameAudio(game: GameState, settings: AudioSettings) {
     const sound = engine.current;
     if (!sound || !before) return;
 
-    if (openedCount(game) > openedCount(before)) sound.play("caseOpen");
+    const reveal = game.lastReveal;
+    if (reveal && reveal.sequence !== (before.lastReveal?.sequence ?? 0)) {
+      // The lid itself, then the sting that says how bad it was.
+      sound.play("caseOpen");
+      if (reveal.tier === "high") sound.play("highReveal");
+      if (reveal.tier === "low") sound.play("lowReveal");
+    }
 
     if (before.phase !== "offer" && game.phase === "offer") {
       sound.play("offerArrives");

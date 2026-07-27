@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  MEDIUM_VARIANT_COUNT,
   OFFER_CAP_OF_BEST_IN_PLAY,
   OFFER_FACTOR_BANDS,
   ROUNDING,
@@ -386,6 +387,118 @@ describe("Deal and No Deal", () => {
     expect(game.round).toBe(8);
     expect(swapping.phase).toBe("swap");
     expect(swapping.cases.filter((c) => !c.opened)).toHaveLength(2);
+  });
+});
+
+/**
+ * The Tier rule restated from the spec, independently of the implementation:
+ * rank among values still openable, Player's Case excluded.
+ */
+function expectedTier(state: GameState, caseId: number) {
+  const openable = state.cases
+    .filter((c) => !c.opened && c.id !== state.playerCaseId)
+    .map((c) => c.value)
+    .sort((a, b) => a - b);
+  const value = state.cases.find((c) => c.id === caseId)!.value;
+  const rank = openable.indexOf(value);
+
+  if (rank >= openable.length - 3) return "high";
+  if (rank < 3) return "low";
+  return "medium";
+}
+
+/** A game where the player happens to be holding the Top Prize. */
+function holdingTopPrize(seed: number) {
+  const started = gameReducer(newGame({ seed }), { type: "START" });
+  const top = Math.max(...started.cases.map((c) => c.value));
+  const caseId = started.cases.find((c) => c.value === top)!.id;
+  return gameReducer(started, { type: "PICK_PLAYER_CASE", caseId });
+}
+
+describe("Tier classification", () => {
+  it("matches the ranking of values still openable, every opening", () => {
+    for (let seed = 1; seed <= 150; seed++) {
+      let game = atRoundOne(seed);
+
+      while (game.phase === "opening" || game.phase === "offer") {
+        if (game.phase === "offer") {
+          if (game.round >= 8) break;
+          game = gameReducer(game, { type: "DECLINE_OFFER" });
+          continue;
+        }
+        const next = openable(game)[0];
+        const predicted = expectedTier(game, next.id);
+        game = gameReducer(game, { type: "OPEN_CASE", caseId: next.id });
+
+        expect(game.lastReveal).not.toBeNull();
+        expect(game.lastReveal!.caseId).toBe(next.id);
+        expect(game.lastReveal!.tier).toBe(predicted);
+      }
+    }
+  });
+
+  it("re-ranks as the pool shrinks, so one value can change Tier", () => {
+    const tiers = new Set<string>();
+    for (let seed = 1; seed <= 60; seed++) {
+      let game = atRoundOne(seed);
+      while (game.phase === "opening") {
+        game = gameReducer(game, {
+          type: "OPEN_CASE",
+          caseId: openable(game)[0].id,
+        });
+        tiers.add(game.lastReveal!.tier);
+      }
+    }
+
+    expect([...tiers].sort()).toEqual(["high", "low", "medium"]);
+  });
+
+  it("never lets the Player's Case affect the ranking", () => {
+    for (let seed = 1; seed <= 60; seed++) {
+      const game = holdingTopPrize(seed);
+      const openableCases = openable(game);
+
+      // The player holds the biggest value, yet three others must still be
+      // high Tier — the ranking is over what can actually be opened.
+      const highs = openableCases.filter(
+        (c) => expectedTier(game, c.id) === "high",
+      );
+      expect(highs).toHaveLength(3);
+      expect(highs.map((c) => c.id)).not.toContain(game.playerCaseId);
+
+      for (const c of openableCases) {
+        const opened = gameReducer(game, { type: "OPEN_CASE", caseId: c.id });
+        expect(opened.lastReveal!.tier).toBe(expectedTier(game, c.id));
+      }
+    }
+  });
+
+  it("assigns a medium variant only to medium Tier reveals", () => {
+    const variants = new Set<number>();
+    for (let seed = 1; seed <= 80; seed++) {
+      let game = atRoundOne(seed);
+      while (game.phase === "opening") {
+        game = gameReducer(game, {
+          type: "OPEN_CASE",
+          caseId: openable(game)[0].id,
+        });
+        const reveal = game.lastReveal!;
+        if (reveal.tier === "medium") variants.add(reveal.variant);
+        else expect(reveal.variant).toBe(0);
+      }
+    }
+
+    expect(variants.size).toBeGreaterThan(1);
+    expect(Math.max(...variants)).toBeLessThan(MEDIUM_VARIANT_COUNT);
+  });
+
+  it("clears the last reveal on a new game", () => {
+    const played = gameReducer(atRoundOne(), {
+      type: "OPEN_CASE",
+      caseId: openable(atRoundOne())[0].id,
+    });
+
+    expect(gameReducer(played, { type: "NEW_GAME" }).lastReveal).toBeNull();
   });
 });
 

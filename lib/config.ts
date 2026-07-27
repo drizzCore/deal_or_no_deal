@@ -82,6 +82,37 @@ export const TIMING = {
   reducedMotionBeatMs: 150,
 } as const;
 
+/** How many Cases at each end of the remaining pool get the pinned treatment. */
+export const TIER_EDGE_SIZE = 3;
+
+/** Medium-suspense reveal variants, so the middle never feels repetitive. */
+export const MEDIUM_VARIANT_COUNT = 4;
+
+/**
+ * How much longer each Tier's beat runs. High Tier is the slow-motion one.
+ * Multiplies TIMING.tensionBeatMs.
+ */
+export const TIER_BEAT_SCALE = {
+  high: 1.7,
+  medium: 1,
+  low: 0.65,
+} as const;
+
+/**
+ * Everything gets heavier as Rounds progress — Round 1 sits at 1.0, Round 8 at
+ * about 1.6.
+ *
+ * This is what replaced the original brief's "everything is top Tier from Round
+ * 4". That rule produced six identical maximum-drama reveals in a row and gave
+ * the ₱1 Case the full dread treatment. Raising the floor keeps the escalation
+ * without spending the contrast that makes a gut-punch land.
+ */
+export const ROUND_INTENSITY_STEP = 0.085;
+
+export function roundIntensity(round: number): number {
+  return 1 + (round - 1) * ROUND_INTENSITY_STEP;
+}
+
 /** Multipliers on TIMING, chosen in settings. */
 export const REVEAL_SPEEDS = {
   normal: 1,
@@ -89,6 +120,31 @@ export const REVEAL_SPEEDS = {
 } as const;
 
 export type RevealSpeed = keyof typeof REVEAL_SPEEDS;
+
+/**
+ * How long the beat before a Case opens should run, given everything that
+ * affects it. All the pacing arithmetic lives here so it can be retuned in one
+ * place after playtesting.
+ */
+export function beatDurationMs({
+  tier,
+  round,
+  speed,
+  reducedMotion,
+}: {
+  tier: keyof typeof TIER_BEAT_SCALE;
+  round: number;
+  speed: RevealSpeed;
+  reducedMotion: boolean;
+}): number {
+  if (reducedMotion) return TIMING.reducedMotionBeatMs;
+  return Math.round(
+    TIMING.tensionBeatMs *
+      TIER_BEAT_SCALE[tier] *
+      roundIntensity(round) *
+      REVEAL_SPEEDS[speed],
+  );
+}
 
 /** Top Prize presets offered in settings. */
 export const TOP_PRIZE_PRESETS = [10_000, 50_000, 100_000, 1_000_000] as const;

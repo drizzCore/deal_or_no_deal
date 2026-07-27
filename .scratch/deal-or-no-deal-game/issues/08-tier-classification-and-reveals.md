@@ -4,7 +4,7 @@
 
 **Blocked by:** 06, 07
 
-**Status:** ready-for-agent
+**Status:** done
 
 Before each Case opens, re-rank the values still openable — excluding the Player's Case, which can never be opened. Top three remaining → high Tier. Bottom three remaining → low Tier. Everything else → one of three or four medium variants chosen at random.
 
@@ -16,14 +16,14 @@ The smallest openable pool during Rounds 1–3 is seven Cases, so top-three and 
 
 Confetti fires on low-Tier reveals only — not on medium or high.
 
-- [ ] Tier is recalculated immediately before each opening, from values still openable
-- [ ] The Player's Case is excluded from Tier ranking
-- [ ] High Tier: slow-motion reveal, red/gold flash, brief shake, dramatic sting, screen darkens
-- [ ] Low Tier: quick relief reveal, green/light flash, upbeat chime, small confetti burst
-- [ ] Medium Tier: one of three or four variants, chosen at random per opening
-- [ ] A Round-scaled intensity multiplier raises all Tiers as Rounds progress
-- [ ] A low-Tier reveal in a late Round is still visibly lighter than a high-Tier one
-- [ ] Tier is recorded in state and driven from the reducer
-- [ ] Reduced motion suppresses shake, flash and screen darkening across all Tiers
-- [ ] Tests: Tier classification always matches the ranking of values still openable
-- [ ] Tests: the Player's Case never affects Tier ranking
+- [x] Tier is recalculated immediately before each opening, from values still openable
+- [x] The Player's Case is excluded from Tier ranking
+- [x] High Tier: slow-motion reveal, red/gold flash, brief shake, dramatic sting, screen darkens
+- [x] Low Tier: quick relief reveal, green/light flash, upbeat chime, small confetti burst
+- [x] Medium Tier: one of three or four variants, chosen at random per opening
+- [x] A Round-scaled intensity multiplier raises all Tiers as Rounds progress
+- [x] A low-Tier reveal in a late Round is still visibly lighter than a high-Tier one
+- [x] Tier is recorded in state and driven from the reducer
+- [x] Reduced motion suppresses shake, flash and screen darkening across all Tiers
+- [x] Tests: Tier classification always matches the ranking of values still openable
+- [x] Tests: the Player's Case never affects Tier ranking

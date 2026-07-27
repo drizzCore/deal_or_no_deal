@@ -10,15 +10,23 @@ import { LadderColumn } from "./components/LadderColumn";
 import { OfferHistory } from "./components/OfferHistory";
 import { OfferPanel } from "./components/OfferPanel";
 import { PlayerCase } from "./components/PlayerCase";
+import { RevealEffects } from "./components/RevealEffects";
 import { SoundControl } from "./components/SoundControl";
 import { SwapDecision } from "./components/SwapDecision";
-import { ROUND_COUNT, TIMING, TOP_PRIZE_PRESETS } from "@/lib/config";
+import {
+  beatDurationMs,
+  ROUND_COUNT,
+  TIMING,
+  TOP_PRIZE_PRESETS,
+  type RevealSpeed,
+} from "@/lib/config";
 import {
   bestRefusedOffer,
   casesLeftToOpen,
   gameReducer,
   newGame,
   otherRemainingCase,
+  tierFor,
   type GameState,
 } from "@/lib/game";
 import { formatPeso } from "@/lib/money";
@@ -73,10 +81,28 @@ export default function Home() {
     onOpen: openCase,
     onArm: armTension,
     onDisarm: disarmTension,
-    reducedMotion,
-    // Ticket 09 puts this on a settings control.
-    speed: "normal",
   });
+
+  // Ticket 09 puts this on a settings control.
+  const revealSpeed: RevealSpeed = "normal";
+
+  const lastBeatMs = game.lastReveal
+    ? beatDurationMs({
+        tier: game.lastReveal.tier,
+        round: game.lastReveal.round,
+        speed: revealSpeed,
+        reducedMotion,
+      })
+    : TIMING.tensionBeatMs;
+
+  // High-Tier openings shake the stage. Alternating the class by reveal parity
+  // restarts the animation without a reflow hack.
+  const shakeClass =
+    !reducedMotion && game.lastReveal?.tier === "high"
+      ? game.lastReveal.sequence % 2 === 0
+        ? "shake-a"
+        : "shake-b"
+      : "";
 
   const startFreshGame = (topPrize?: number) => {
     cancel();
@@ -118,7 +144,13 @@ export default function Home() {
       return;
     }
     // Opening runs through the tension beat rather than dispatching directly.
-    arm(caseId);
+    // The Tier is known before the lid moves, so the beat can be sized to it —
+    // dread runs long, relief runs short.
+    const tier = tierFor(game, caseId);
+    arm(
+      caseId,
+      beatDurationMs({ tier, round: game.round, speed: revealSpeed, reducedMotion }),
+    );
   };
 
   const ladders = (
@@ -129,8 +161,9 @@ export default function Home() {
   );
 
   return (
+    <>
     <main
-      className="stage-wash relative flex flex-1 flex-col items-center px-4 pt-6 pb-12 sm:px-6"
+      className={`stage-wash relative flex flex-1 flex-col items-center px-4 pt-6 pb-12 sm:px-6 ${shakeClass}`}
       style={
         {
           "--lid-ms": `${TIMING.lidOpenMs}ms`,
@@ -276,5 +309,14 @@ export default function Home() {
         </div>
       )}
     </main>
+
+    {/* Sibling of <main>, not a child: the shake puts a transform on <main>,
+        which would otherwise trap this fixed overlay inside the page. */}
+    <RevealEffects
+      reveal={game.lastReveal}
+      reducedMotion={reducedMotion}
+      durationMs={lastBeatMs}
+    />
+    </>
   );
 }

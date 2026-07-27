@@ -1,11 +1,13 @@
 import {
   CASES_PER_ROUND,
   DEFAULT_TOP_PRIZE,
+  MEDIUM_VARIANT_COUNT,
   ROUND_COUNT,
+  TIER_EDGE_SIZE,
 } from "./config";
 import { buildLadder } from "./ladder";
 import { makeOffer } from "./offer";
-import { shuffle } from "./rng";
+import { rollIndex, shuffle } from "./rng";
 
 /**
  * Which screen the game is on. Each phase accepts only its own actions —
@@ -23,6 +25,21 @@ export type Phase =
 
 /** How a finished game ended. */
 export type Outcome = "deal" | "kept" | "swapped";
+
+/** The dramatic weight of a Case opening. */
+export type Tier = "high" | "medium" | "low";
+
+/** What just happened, for the presentation layer to react to. */
+export interface Reveal {
+  readonly caseId: number;
+  readonly value: number;
+  readonly tier: Tier;
+  /** Which medium-suspense variant to play. Always 0 outside medium Tier. */
+  readonly variant: number;
+  readonly round: number;
+  /** Increments every opening, so repeated Tiers still read as new events. */
+  readonly sequence: number;
+}
 
 /** One Offer the Bank has made. The factor is kept for playtesting. */
 export interface Offer {
@@ -51,6 +68,8 @@ export interface GameState {
   readonly round: number;
   /** Every Offer made this game, oldest first. */
   readonly offers: readonly Offer[];
+  /** The most recent Case opening. Null before the first one. */
+  readonly lastReveal: Reveal | null;
   /** What the player walked away with. Null until the game ends. */
   readonly winnings: number | null;
   /** How the game ended. Null while it is still running. */
@@ -89,6 +108,7 @@ export function newGame({
     playerCaseId: null,
     round: 1,
     offers: [],
+    lastReveal: null,
     winnings: null,
     outcome: null,
     finalCaseId: null,
@@ -110,6 +130,29 @@ export function bestRefusedOffer(state: GameState): Offer | null {
   return refused.reduce((best, offer) =>
     offer.amount > best.amount ? offer : best,
   );
+}
+
+/**
+ * The dramatic weight of opening this Case, ranked against everything else
+ * still openable — recalculated fresh every time, because the same value moves
+ * between Tiers as the pool shrinks.
+ *
+ * The Player's Case is excluded: it can never be opened, so it has no business
+ * influencing how the openable ones rank.
+ */
+export function tierFor(state: GameState, caseId: number): Tier {
+  const openable = state.cases
+    .filter((c) => !c.opened && c.id !== state.playerCaseId)
+    .map((c) => c.value)
+    .sort((a, b) => a - b);
+
+  const target = state.cases.find((c) => c.id === caseId);
+  if (!target) return "medium";
+
+  const rank = openable.indexOf(target.value);
+  if (rank >= openable.length - TIER_EDGE_SIZE) return "high";
+  if (rank < TIER_EDGE_SIZE) return "low";
+  return "medium";
 }
 
 /** The Case still In Play that the player is not holding. */
@@ -192,23 +235,42 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const target = state.cases.find((c) => c.id === action.caseId);
       if (!target || target.opened) return state;
 
+      // Ranked before the Case is marked open, so it counts itself.
+      const tier = tierFor(state, action.caseId);
+      const picked =
+        tier === "medium"
+          ? rollIndex(state.seed, MEDIUM_VARIANT_COUNT)
+          : { value: 0, seed: state.seed };
+
       const cases = state.cases.map((c) =>
         c.id === action.caseId ? { ...c, opened: true } : c,
       );
+
+      const reveal: Reveal = {
+        caseId: action.caseId,
+        value: target.value,
+        tier,
+        variant: picked.value,
+        round: state.round,
+        sequence: (state.lastReveal?.sequence ?? 0) + 1,
+      };
 
       const openedThisRound =
         cases.filter((c) => c.opened).length -
         casesOpenedBeforeRound(state.round);
       const roundIsDone = openedThisRound >= CASES_PER_ROUND[state.round - 1];
 
-      if (!roundIsDone) return { ...state, cases };
+      if (!roundIsDone) {
+        return { ...state, cases, lastReveal: reveal, seed: picked.seed };
+      }
 
       const inPlay = cases.filter((c) => !c.opened).map((c) => c.value);
-      const rolled = makeOffer(inPlay, state.round, state.seed);
+      const rolled = makeOffer(inPlay, state.round, picked.seed);
 
       return {
         ...state,
         cases,
+        lastReveal: reveal,
         phase: "offer",
         seed: rolled.seed,
         offers: [
