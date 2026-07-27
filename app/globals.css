@@ -63,10 +63,41 @@ body {
 }
 
 /*
- * A sealed Case. Brushed metal catching the key light: a bright top rim, a
- * darker body, and a lifted edge. Ticket 07 rotates the lid off this.
+ * A Case is a lid over a body. The lid is brushed metal catching the key
+ * light; the body is the dark interior holding the value. Opening rotates the
+ * lid away on its top edge rather than swapping the face.
  */
-.case-tile {
+.case-scene {
+  perspective: 620px;
+}
+
+.case-3d {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.case-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+/* The interior, revealed as the lid swings up. */
+.case-body {
+  background: linear-gradient(180deg, #0d1118 0%, #161d29 100%);
+  box-shadow: inset 0 6px 14px -4px rgba(0, 0, 0, 0.95);
+  transition: box-shadow var(--lid-ms, 650ms) ease-out;
+}
+
+.case-lid {
+  transform-origin: 50% 0%;
+  transform: rotateX(0deg);
+  backface-visibility: hidden;
   background:
     linear-gradient(
       160deg,
@@ -80,14 +111,17 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.22),
     inset 0 -1px 0 rgba(0, 0, 0, 0.5),
     0 10px 22px -12px rgba(0, 0, 0, 0.9);
+  transition:
+    transform var(--lid-ms, 650ms) cubic-bezier(0.34, 0.8, 0.28, 1),
+    box-shadow var(--lid-ms, 650ms) ease-out;
 }
 
-.case-tile::after {
-  /* The seam where the lid meets the body. */
+.case-lid::after {
+  /* The seam where lid meets body. */
   content: "";
   position: absolute;
   inset-inline: 12%;
-  top: 34%;
+  bottom: 6px;
   height: 1px;
   background: linear-gradient(
     90deg,
@@ -97,6 +131,77 @@ body {
   );
 }
 
+/* Open: the lid tips back, and the light it was catching falls into the body. */
+.case-3d.is-open .case-lid {
+  transform: rotateX(-118deg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 2px 6px -2px rgba(0, 0, 0, 0.9);
+}
+
+.case-3d.is-open .case-body {
+  box-shadow:
+    inset 0 10px 18px -6px rgba(0, 0, 0, 0.98),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* Armed: the beat before the lid moves. */
+@keyframes case-arming {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.045);
+  }
+}
+
+.case-3d.is-arming {
+  animation: case-arming 460ms ease-in-out infinite;
+}
+
+.case-3d.is-arming .case-lid {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 0 1px rgba(242, 208, 107, 0.55),
+    0 0 22px 2px rgba(242, 208, 107, 0.35),
+    0 10px 22px -12px rgba(0, 0, 0, 0.9);
+}
+
+/*
+ * The key light. Positioned from the grid's own geometry, so it needs no
+ * measurement — only this one element moves, and nothing else reflows with it.
+ */
+.spotlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 280px;
+  height: 280px;
+  margin: -140px 0 0 -140px;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle,
+    rgba(242, 208, 107, 0.22) 0%,
+    rgba(242, 208, 107, 0.08) 38%,
+    transparent 68%
+  );
+  transition:
+    left var(--spot-ms, 380ms) cubic-bezier(0.4, 0, 0.2, 1),
+    top var(--spot-ms, 380ms) cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 220ms ease-out;
+}
+
+.spotlight.is-lit {
+  opacity: 1;
+}
+
+/*
+ * Reduced motion: no pulsing, no travelling light, no shake. The lid still
+ * moves — the sequence has to stay legible — but it gets there at once.
+ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -104,5 +209,13 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .case-3d.is-arming {
+    animation: none;
+  }
+
+  .spotlight {
+    display: none;
   }
 }

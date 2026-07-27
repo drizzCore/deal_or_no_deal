@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useReducer, useState } from "react";
+import { useCallback, useMemo, useReducer, useState } from "react";
+import { useCaseOpening } from "./hooks/useCaseOpening";
 import { useGameAudio } from "./hooks/useGameAudio";
+import { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion";
 import { CaseGrid } from "./components/CaseGrid";
 import { GameOver } from "./components/GameOver";
 import { LadderColumn } from "./components/LadderColumn";
@@ -10,7 +12,7 @@ import { OfferPanel } from "./components/OfferPanel";
 import { PlayerCase } from "./components/PlayerCase";
 import { SoundControl } from "./components/SoundControl";
 import { SwapDecision } from "./components/SwapDecision";
-import { ROUND_COUNT, TOP_PRIZE_PRESETS } from "@/lib/config";
+import { ROUND_COUNT, TIMING, TOP_PRIZE_PRESETS } from "@/lib/config";
 import {
   bestRefusedOffer,
   casesLeftToOpen,
@@ -56,7 +58,31 @@ export default function Home() {
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(0.7);
   const audioSettings = useMemo(() => ({ muted, volume }), [muted, volume]);
-  const { unlock, play } = useGameAudio(game, audioSettings);
+  const { unlock, play, stop } = useGameAudio(game, audioSettings);
+
+  const reducedMotion = usePrefersReducedMotion();
+
+  const armTension = useCallback(() => play("tension"), [play]);
+  const disarmTension = useCallback(() => stop("tension"), [stop]);
+  const openCase = useCallback(
+    (caseId: number) => dispatch({ type: "OPEN_CASE", caseId }),
+    [],
+  );
+
+  const { armingCaseId, arm, cancel, busy } = useCaseOpening({
+    onOpen: openCase,
+    onArm: armTension,
+    onDisarm: disarmTension,
+    reducedMotion,
+    // Ticket 09 puts this on a settings control.
+    speed: "normal",
+  });
+
+  const startFreshGame = (topPrize?: number) => {
+    cancel();
+    play("uiClick");
+    dispatch({ type: "NEW_GAME", ...(topPrize ? { topPrize } : {}) });
+  };
 
   const eliminated = useMemo(
     () =>
@@ -86,12 +112,14 @@ export default function Home() {
         ? "open"
         : "idle";
 
-  const onSelect = (caseId: number) =>
-    dispatch(
-      game.phase === "pickingCase"
-        ? { type: "PICK_PLAYER_CASE", caseId }
-        : { type: "OPEN_CASE", caseId },
-    );
+  const onSelect = (caseId: number) => {
+    if (game.phase === "pickingCase") {
+      dispatch({ type: "PICK_PLAYER_CASE", caseId });
+      return;
+    }
+    // Opening runs through the tension beat rather than dispatching directly.
+    arm(caseId);
+  };
 
   const ladders = (
     <>
@@ -101,7 +129,15 @@ export default function Home() {
   );
 
   return (
-    <main className="stage-wash relative flex flex-1 flex-col items-center px-4 pt-6 pb-12 sm:px-6">
+    <main
+      className="stage-wash relative flex flex-1 flex-col items-center px-4 pt-6 pb-12 sm:px-6"
+      style={
+        {
+          "--lid-ms": `${TIMING.lidOpenMs}ms`,
+          "--spot-ms": `${TIMING.spotlightMs}ms`,
+        } as React.CSSProperties
+      }
+    >
       <header className="flex w-full max-w-5xl flex-col gap-3 border-b border-stage-edge pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-3xl leading-none tracking-wide text-bone sm:text-4xl">
@@ -126,10 +162,7 @@ export default function Home() {
               <button
                 key={prize}
                 type="button"
-                onClick={() => {
-                  play("uiClick");
-                  dispatch({ type: "NEW_GAME", topPrize: prize });
-                }}
+                onClick={() => startFreshGame(prize)}
                 className={[
                   "tabular rounded-sm px-2.5 py-1.5 text-xs transition-colors",
                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot",
@@ -144,10 +177,7 @@ export default function Home() {
           })}
           <button
             type="button"
-            onClick={() => {
-              play("uiClick");
-              dispatch({ type: "NEW_GAME" });
-            }}
+            onClick={() => startFreshGame()}
             className="rounded-sm border border-stage-edge px-2.5 py-1.5 text-xs text-bone-dim transition-colors hover:border-brass-dim hover:text-bone focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot"
           >
             New game
@@ -168,7 +198,8 @@ export default function Home() {
           <CaseGrid
             cases={game.cases}
             playerCaseId={game.playerCaseId}
-            mode={mode}
+            mode={busy ? "idle" : mode}
+            armingCaseId={armingCaseId}
             onSelect={onSelect}
           />
 
@@ -203,7 +234,7 @@ export default function Home() {
               game={game}
               heldCase={heldCase}
               forgoneCase={forgoneCase}
-              onPlayAgain={() => dispatch({ type: "NEW_GAME" })}
+              onPlayAgain={() => startFreshGame()}
             />
           )}
         </div>

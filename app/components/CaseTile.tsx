@@ -6,54 +6,67 @@ interface CaseTileProps {
   /** Null when the tile is not selectable in the current phase. */
   readonly onSelect: ((caseId: number) => void) | null;
   readonly label: string;
+  /** True during the tension beat, before the lid moves. */
+  readonly arming?: boolean;
 }
 
 /**
- * One Case. Sealed it catches the key light; opened it goes flat and dead,
- * showing what the player gave up. Ticket 07 rotates the lid off the sealed
- * state — until then it swaps directly.
+ * One Case: a metal lid over a dark interior. Opening rotates the lid away on
+ * its top edge — the value is never swapped into place.
+ *
+ * The 3D subtree lives in an element that never changes type. The button is an
+ * overlay rather than a wrapper, because swapping the wrapper from button to
+ * div on open would remount the lid and destroy the transition mid-flight.
  */
-export function CaseTile({ briefcase, onSelect, label }: CaseTileProps) {
-  const content = briefcase.opened ? (
-    <span className="tabular text-[11px] leading-none text-bone-faint sm:text-xs">
-      {formatPeso(briefcase.value)}
-    </span>
-  ) : (
-    <span className="tabular font-display text-2xl leading-none text-bone/90 sm:text-3xl">
-      {briefcase.id}
-    </span>
-  );
-
-  const shape =
-    "relative flex aspect-[5/4] w-full items-center justify-center rounded-md";
-
-  if (briefcase.opened) {
-    return (
-      <div
-        className={`${shape} border border-stage-edge/60 bg-stage/60`}
-        aria-label={`Case ${briefcase.id}, opened, ${formatPeso(briefcase.value)}`}
-      >
-        {content}
-      </div>
-    );
-  }
-
-  if (!onSelect) {
-    return (
-      <div className={`case-tile ${shape}`} aria-label={label}>
-        {content}
-      </div>
-    );
-  }
+export function CaseTile({
+  briefcase,
+  onSelect,
+  label,
+  arming = false,
+}: CaseTileProps) {
+  const selectable = onSelect !== null && !briefcase.opened;
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(briefcase.id)}
-      aria-label={label}
-      className={`case-tile ${shape} cursor-pointer transition-transform duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot`}
+    <div
+      className={[
+        "case-scene relative aspect-[5/4] w-full transition-transform duration-150",
+        selectable ? "hover:-translate-y-0.5" : "",
+      ].join(" ")}
     >
-      {content}
-    </button>
+      <span className="sr-only">
+        {briefcase.opened
+          ? `Case ${briefcase.id}, opened, ${formatPeso(briefcase.value)}`
+          : `Case ${briefcase.id}, sealed`}
+      </span>
+
+      <div
+        aria-hidden
+        className={[
+          "case-3d",
+          briefcase.opened ? "is-open" : "",
+          arming ? "is-arming" : "",
+        ].join(" ")}
+      >
+        <div className="case-face case-body">
+          <span className="tabular text-[11px] leading-none text-bone-dim sm:text-xs">
+            {briefcase.opened ? formatPeso(briefcase.value) : ""}
+          </span>
+        </div>
+        <div className="case-face case-lid">
+          <span className="tabular font-display text-2xl leading-none text-bone/90 sm:text-3xl">
+            {briefcase.id}
+          </span>
+        </div>
+      </div>
+
+      {selectable && (
+        <button
+          type="button"
+          onClick={() => onSelect(briefcase.id)}
+          aria-label={label}
+          className="absolute inset-0 z-10 cursor-pointer rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot"
+        />
+      )}
+    </div>
   );
 }

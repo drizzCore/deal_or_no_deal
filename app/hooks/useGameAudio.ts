@@ -42,6 +42,10 @@ export function useGameAudio(game: GameState, settings: AudioSettings) {
     engine.current?.play(cue);
   }, []);
 
+  const stop = useCallback((cue: CueName) => {
+    engine.current?.stop(cue);
+  }, []);
+
   useEffect(() => {
     const before = previous.current;
     previous.current = game;
@@ -75,5 +79,5 @@ export function useGameAudio(game: GameState, settings: AudioSettings) {
     return () => current.current?.dispose();
   }, []);
 
-  return { unlock, play };
+  return { unlock, play, stop };
 }

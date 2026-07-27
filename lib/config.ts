@@ -65,6 +65,31 @@ export const ROUNDING: readonly { readonly above: number; readonly step: number 
     { above: 0, step: 1 },
   ];
 
+/**
+ * How long each beat of a Case opening takes, in milliseconds.
+ *
+ * Retune here after playtesting. These were set analytically, not by feel —
+ * eighteen openings a game means small changes here add up fast.
+ */
+export const TIMING = {
+  /** The pause before the lid moves: glow, spotlight, rising tension. */
+  tensionBeatMs: 900,
+  /** The lid rotating away. */
+  lidOpenMs: 650,
+  /** How long the spotlight takes to travel to the next Case. */
+  spotlightMs: 380,
+  /** Cut-down beat when the player has asked for reduced motion. */
+  reducedMotionBeatMs: 150,
+} as const;
+
+/** Multipliers on TIMING, chosen in settings. */
+export const REVEAL_SPEEDS = {
+  normal: 1,
+  fast: 0.5,
+} as const;
+
+export type RevealSpeed = keyof typeof REVEAL_SPEEDS;
+
 /** Top Prize presets offered in settings. */
 export const TOP_PRIZE_PRESETS = [10_000, 50_000, 100_000, 1_000_000] as const;
 
