@@ -324,6 +324,61 @@ body {
 }
 
 /*
+ * The Round announcement. Its animation ending is what unlocks the board, so
+ * it must always run — under reduced motion the global rule shortens it to
+ * effectively nothing, which is exactly right.
+ */
+.round-intro-layer {
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(11, 14, 20, 0.92) 0%,
+    rgba(11, 14, 20, 0.72) 55%,
+    rgba(11, 14, 20, 0.4) 100%
+  );
+  animation: round-intro-wash var(--intro-ms, 1700ms) ease-out forwards;
+}
+
+@keyframes round-intro-wash {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  76% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.round-intro {
+  animation: round-intro var(--intro-ms, 1700ms) cubic-bezier(0.2, 0.7, 0.3, 1)
+    forwards;
+}
+
+@keyframes round-intro {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(8px);
+  }
+  14% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  74% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.05) translateY(-6px);
+  }
+}
+
+/*
  * Camera shake for high-Tier openings. Two identical classes alternated by
  * reveal parity, which restarts the animation without a reflow hack.
  */

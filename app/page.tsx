@@ -11,10 +11,12 @@ import { OfferHistory } from "./components/OfferHistory";
 import { OfferPanel } from "./components/OfferPanel";
 import { PlayerCase } from "./components/PlayerCase";
 import { RevealEffects } from "./components/RevealEffects";
+import { RoundIntro } from "./components/RoundIntro";
 import { SoundControl } from "./components/SoundControl";
 import { SwapDecision } from "./components/SwapDecision";
 import {
   beatDurationMs,
+  CASES_PER_ROUND,
   ROUND_COUNT,
   TIMING,
   TOP_PRIZE_PRESETS,
@@ -104,9 +106,23 @@ export default function Home() {
         : "shake-b"
       : "";
 
+  // The board is locked until the Round's announcement has played. Tracked by
+  // which Round the player has already seen announced, so no timer is needed —
+  // the card reports its own animation ending.
+  const [roundAnnounced, setRoundAnnounced] = useState<number | null>(null);
+  const announcingRound =
+    game.phase === "opening" && roundAnnounced !== game.round;
+
+  // Stable within a Round, which is the granularity the card is keyed at.
+  const announceRoundDone = useCallback(
+    () => setRoundAnnounced(game.round),
+    [game.round],
+  );
+
   const startFreshGame = (topPrize?: number) => {
     cancel();
     play("uiClick");
+    setRoundAnnounced(null);
     dispatch({ type: "NEW_GAME", ...(topPrize ? { topPrize } : {}) });
   };
 
@@ -231,7 +247,7 @@ export default function Home() {
           <CaseGrid
             cases={game.cases}
             playerCaseId={game.playerCaseId}
-            mode={busy ? "idle" : mode}
+            mode={busy || announcingRound ? "idle" : mode}
             armingCaseId={armingCaseId}
             onSelect={onSelect}
           />
@@ -317,6 +333,16 @@ export default function Home() {
       reducedMotion={reducedMotion}
       durationMs={lastBeatMs}
     />
+
+    {announcingRound && (
+      <RoundIntro
+        key={game.round}
+        round={game.round}
+        casesToOpen={CASES_PER_ROUND[game.round - 1]}
+        durationMs={TIMING.roundIntroMs}
+        onFinished={announceRoundDone}
+      />
+    )}
     </>
   );
 }

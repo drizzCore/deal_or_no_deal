@@ -20,21 +20,24 @@ export const ROUND_COUNT = CASES_PER_ROUND.length;
 /**
  * What the Bank pays, as a multiple of Expected Value, per Round.
  *
- * A smooth ramp of +0.10 a Round: early Offers are lowballs, later ones close
- * on what the board is actually worth. This is the main lever on how greedy
- * the game feels — retune here after playtesting.
+ * A smooth ramp of +0.05 a Round. Deliberately generous from the start: at a
+ * low opening coefficient the first few Rounds stop being a decision at all,
+ * because nobody accepts a fifth of the board. Starting near it makes every
+ * Round a real choice. By Round 8 the Bank pays slightly over the odds to
+ * tempt the player out of the final two.
  *
+ * This is the main lever on how the game feels — retune here after playtesting.
  * There is deliberately no randomness. See ADR 0006.
  */
 export const OFFER_COEFFICIENTS: readonly number[] = [
-  0.18, // Round 1
-  0.28, // Round 2
-  0.38, // Round 3
-  0.48, // Round 4
-  0.58, // Round 5
-  0.68, // Round 6
-  0.78, // Round 7
-  0.88, // Round 8
+  0.7, // Round 1
+  0.75, // Round 2
+  0.8, // Round 3
+  0.85, // Round 4
+  0.9, // Round 5
+  0.95, // Round 6
+  1.0, // Round 7
+  1.05, // Round 8
 ];
 
 /**
@@ -75,6 +78,8 @@ export const TIMING = {
   spotlightMs: 380,
   /** Cut-down beat when the player has asked for reduced motion. */
   reducedMotionBeatMs: 150,
+  /** The card announcing a Round, before any Case can be picked. */
+  roundIntroMs: 1700,
 } as const;
 
 /** How many Cases at each end of the remaining pool get the pinned treatment. */

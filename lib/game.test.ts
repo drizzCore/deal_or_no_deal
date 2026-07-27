@@ -370,8 +370,10 @@ describe("Offer invariants across many games", () => {
       .map((round) => mean(byRound.get(round)!));
 
     expect(shares[0]).toBeLessThan(shares.at(-1)!);
-    expect(shares[0]).toBeLessThan(0.3);
-    expect(shares.at(-1)!).toBeGreaterThan(0.6);
+    // Generous from Round 1 — an Offer nobody would ever accept is not a
+    // decision. By Round 8 the Bank pays around the board's full value.
+    expect(shares[0]).toBeGreaterThan(0.6);
+    expect(shares.at(-1)!).toBeGreaterThan(0.95);
   });
 });
 

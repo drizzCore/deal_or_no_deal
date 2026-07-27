@@ -10,7 +10,9 @@ Removing the randomness alone does not fix this. A fixed coefficient per Round s
 
 Two changes together:
 
-**The coefficient is fixed and smooth** — a ramp of +0.10 a Round, from 0.18 at Round 1 to 0.88 at Round 8. No band, no roll, no wild swing. The Offer is now a deterministic function of the board.
+**The coefficient is fixed and smooth** — a ramp of +0.05 a Round, from 0.70 at Round 1 to 1.05 at Round 8. No band, no roll, no wild swing. The Offer is now a deterministic function of the board.
+
+The curve started at 0.18 and was raised after comparing against a separate prototype of the same game. A low opening coefficient stops the early Rounds being a decision at all — nobody accepts a fifth of the board, so "No Deal" is automatic for three Rounds. Starting near the board's value makes every Round a genuine choice. The cost is that holding out only grows the multiple about 1.5× instead of 4.7×, so the tension moves from *the Offer keeps growing* to *the board might collapse*. That is the better game.
 
 **The Offer may never move against Expected Value.** A worse board drags it down in proportion to what was lost; a better board can only push it up. Both directions measure at 0%.
 
