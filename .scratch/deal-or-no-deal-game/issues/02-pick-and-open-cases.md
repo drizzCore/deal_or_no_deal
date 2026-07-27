@@ -1,0 +1,26 @@
+# 02 — Pick your Case and open Cases
+
+**What to build:** The player picks one Case as their Player's Case and it visibly leaves the grid to sit apart. They then open other Cases one at a time by tapping them. Each opened Case stays on the board showing its value, and the matching rung of the Prize Ladder goes dark immediately. The player always knows which Round they are in and how many Cases they still have to open.
+
+Round 1 is fully playable. There is no Offer yet — the game simply stops once the Round's Cases are open.
+
+**Blocked by:** 01
+
+**Status:** ready-for-agent
+
+No animation in this ticket. Cases open instantly. The theatrics are tickets 07 and 08 — the spec's build order is deliberate: the game must be playable and tunable before anything is animated against it.
+
+The Player's Case can never be opened during a Round. It is excluded from everything openable.
+
+- [ ] A `PICK_PLAYER_CASE` action moves the chosen Case out of the grid into its own position
+- [ ] The Player's Case is visually distinct and clearly sealed
+- [ ] The Player's Case cannot be opened or re-picked
+- [ ] An `OPEN_CASE` action reveals a Case's value and marks it opened
+- [ ] Opened Cases remain on the board displaying their value, visibly dead
+- [ ] The matching Prize Ladder rung goes dark the moment a Case opens
+- [ ] The current Round number is always visible
+- [ ] A counter shows how many Cases remain to open this Round
+- [ ] Round structure is 5, 4, 3, 2, 1, 1, 1, 1 Cases across eight Rounds, defined in one obvious place
+- [ ] Opening the last Case of a Round advances the phase rather than allowing another opening
+- [ ] Tests: the Player's Case is never openable
+- [ ] Tests: each Round opens exactly its allotted number of Cases
