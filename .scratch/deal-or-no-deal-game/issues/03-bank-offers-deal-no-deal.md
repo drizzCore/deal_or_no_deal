@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
 Read ADR 0002 before starting. The rounding approach looks like needless complexity and is not — a single `ROUND_TO` constant was tried and produced Offers of exactly ₱0 in one game in twenty-five, while leaving Round 1 with only six distinct possible Offers ever. Do not simplify it back.
 
@@ -25,19 +25,19 @@ otherwise      → step     ₱1
 
 An Offer landing below the cheapest Case In Play is **correct behaviour** and must not be guarded against. It is an insulting Offer the player should refuse, and occurs in roughly 1% of Offers.
 
-- [ ] An Offer is presented after every Round, including Round 8
-- [ ] Expected Value counts the Player's Case
-- [ ] The factor is re-rolled inside the Round band on every Offer
-- [ ] Wild swings fire on roughly 10% of Offers, in both directions
-- [ ] The Offer is clamped to 95% of the highest value In Play
-- [ ] The Offer is floored at ₱1
-- [ ] Offers are rounded by the tier table above
-- [ ] Deal ends the game immediately and stops everything else
-- [ ] No Deal advances to the next Round
-- [ ] Declining the Round 8 Offer advances to a swap phase (built in ticket 04)
-- [ ] The Offer factor bands and rounding table live in one obvious, findable place for retuning
-- [ ] Tests, across many thousands of seeded games: no Offer is ever ₱0
-- [ ] Tests: no Offer ever exceeds 95% of the highest value In Play
-- [ ] Tests: every Offer is a whole number matching its rounding tier
-- [ ] Tests: factors stay inside the Round band except on wild swings, which stay inside their caps
-- [ ] Tests: taking the Deal terminates the game and no further Offers or openings are possible
+- [x] An Offer is presented after every Round, including Round 8
+- [x] Expected Value counts the Player's Case
+- [x] The factor is re-rolled inside the Round band on every Offer
+- [x] Wild swings fire on roughly 10% of Offers, in both directions
+- [x] The Offer is clamped to 95% of the highest value In Play
+- [x] The Offer is floored at ₱1
+- [x] Offers are rounded by the tier table above
+- [x] Deal ends the game immediately and stops everything else
+- [x] No Deal advances to the next Round
+- [x] Declining the Round 8 Offer advances to a swap phase (built in ticket 04)
+- [x] The Offer factor bands and rounding table live in one obvious, findable place for retuning
+- [x] Tests, across many thousands of seeded games: no Offer is ever ₱0
+- [x] Tests: no Offer ever exceeds 95% of the highest value In Play
+- [x] Tests: every Offer is a whole number matching its rounding tier
+- [x] Tests: factors stay inside the Round band except on wild swings, which stay inside their caps
+- [x] Tests: taking the Deal terminates the game and no further Offers or openings are possible

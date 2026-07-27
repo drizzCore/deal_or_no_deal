@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { TOP_PRIZE_PRESETS } from "./config";
-import { gameReducer, newGame, type GameState } from "./game";
+import {
+  OFFER_CAP_OF_BEST_IN_PLAY,
+  OFFER_FACTOR_BANDS,
+  ROUNDING,
+  TOP_PRIZE_PRESETS,
+  WILD_SWING_CEILING,
+  WILD_SWING_FLOOR,
+} from "./config";
+import {
+  gameReducer,
+  newGame,
+  type GameAction,
+  type GameState,
+  type Offer,
+} from "./game";
 
 /**
  * How many digits a number carries once trailing zeros are stripped.
@@ -26,6 +39,10 @@ const atRoundOne = (seed = 1) =>
     type: "PICK_PLAYER_CASE",
     caseId: 7,
   });
+
+/** What the player is actually holding in a game dealt from this seed. */
+const playerValue = (seed: number) =>
+  atRoundOne(seed).cases.find((c) => c.id === 7)!.value;
 
 /** Every Case the player is allowed to open right now. */
 const openable = (state: GameState) =>
@@ -176,7 +193,7 @@ describe("opening Cases", () => {
       caseId: openable(done)[0].id,
     });
 
-    expect(done.phase).toBe("roundComplete");
+    expect(done.phase).toBe("offer");
     expect(done.cases.filter((c) => c.opened)).toHaveLength(5);
     expect(extra.cases.filter((c) => c.opened)).toHaveLength(5);
   });
@@ -196,7 +213,7 @@ describe("the Round structure", () => {
       openedPerRound.push(nowOpen - alreadyOpen);
       alreadyOpen = nowOpen;
 
-      if (round < 8) game = gameReducer(game, { type: "CONTINUE" });
+      if (round < 8) game = gameReducer(game, { type: "DECLINE_OFFER" });
     }
 
     expect(openedPerRound).toEqual([5, 4, 3, 2, 1, 1, 1, 1]);
@@ -206,12 +223,168 @@ describe("the Round structure", () => {
     let game = atRoundOne();
     for (let round = 1; round <= 8; round++) {
       game = finishRound(game);
-      if (round < 8) game = gameReducer(game, { type: "CONTINUE" });
+      if (round < 8) game = gameReducer(game, { type: "DECLINE_OFFER" });
     }
 
     const sealed = game.cases.filter((c) => !c.opened);
     expect(sealed).toHaveLength(2);
     expect(sealed.map((c) => c.id)).toContain(7);
+  });
+});
+
+/** Plays a whole game, declining every Offer, recording what was In Play. */
+function playDecliningEverything(seed: number) {
+  let game = atRoundOne(seed);
+  const rounds: { offer: Offer; inPlay: number[] }[] = [];
+
+  for (let round = 1; round <= 8; round++) {
+    game = finishRound(game);
+    rounds.push({
+      offer: game.offers.at(-1)!,
+      inPlay: game.cases.filter((c) => !c.opened).map((c) => c.value),
+    });
+    if (round < 8) game = gameReducer(game, { type: "DECLINE_OFFER" });
+  }
+
+  return { game, rounds };
+}
+
+/** The rounding step an amount of this size should have landed on. */
+const stepFor = (amount: number) =>
+  ROUNDING.find(({ above }) => amount >= above)!.step;
+
+describe("the Bank's Offer", () => {
+  it("arrives after every Round, including Round 8", () => {
+    const { game, rounds } = playDecliningEverything(11);
+
+    expect(game.offers).toHaveLength(8);
+    expect(rounds.map((r) => r.offer.round)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it("counts the Player's Case in Expected Value", () => {
+    const { rounds } = playDecliningEverything(11);
+    const { offer, inPlay } = rounds[0];
+
+    const withPlayer = inPlay.reduce((a, b) => a + b, 0) / inPlay.length;
+    const withoutPlayer =
+      (inPlay.reduce((a, b) => a + b, 0) - playerValue(11)) /
+      (inPlay.length - 1);
+
+    const distanceTo = (ev: number) => Math.abs(offer.amount - ev * offer.factor);
+    expect(distanceTo(withPlayer)).toBeLessThan(distanceTo(withoutPlayer));
+  });
+
+  it("rolls a fresh factor every time rather than reusing one", () => {
+    const { rounds } = playDecliningEverything(11);
+    const factors = rounds.map((r) => r.offer.factor);
+
+    expect(new Set(factors).size).toBe(8);
+  });
+});
+
+describe("Offer invariants across many games", () => {
+  const SEEDS = 2000;
+  const everyOffer: { offer: Offer; inPlay: number[] }[] = [];
+
+  for (let seed = 1; seed <= SEEDS; seed++) {
+    everyOffer.push(...playDecliningEverything(seed).rounds);
+  }
+
+  it("never offers ₱0", () => {
+    const zeroes = everyOffer.filter(({ offer }) => offer.amount === 0);
+
+    expect(zeroes).toHaveLength(0);
+  });
+
+  it("never exceeds 95% of the best Case still In Play", () => {
+    const overCap = everyOffer.filter(
+      ({ offer, inPlay }) =>
+        offer.amount > Math.max(...inPlay) * OFFER_CAP_OF_BEST_IN_PLAY,
+    );
+
+    expect(overCap).toHaveLength(0);
+  });
+
+  it("always lands on a clean amount for its size", () => {
+    const untidy = everyOffer.filter(
+      ({ offer }) =>
+        !Number.isInteger(offer.amount) ||
+        offer.amount % stepFor(offer.amount) !== 0,
+    );
+
+    expect(untidy).toHaveLength(0);
+  });
+
+  it("keeps ordinary factors inside the Round's band", () => {
+    const outOfBand = everyOffer.filter(({ offer }) => {
+      if (offer.wildSwing) return false;
+      const [low, high] = OFFER_FACTOR_BANDS[offer.round - 1];
+      return offer.factor < low || offer.factor > high;
+    });
+
+    expect(outOfBand).toHaveLength(0);
+  });
+
+  it("keeps wild swings inside their caps", () => {
+    const swings = everyOffer.filter(({ offer }) => offer.wildSwing);
+    const outOfCap = swings.filter(
+      ({ offer }) =>
+        offer.factor < WILD_SWING_FLOOR || offer.factor > WILD_SWING_CEILING,
+    );
+
+    expect(swings.length).toBeGreaterThan(0);
+    expect(outOfCap).toHaveLength(0);
+  });
+
+  it("fires wild swings on roughly one Offer in ten", () => {
+    const rate = everyOffer.filter(({ offer }) => offer.wildSwing).length /
+      everyOffer.length;
+
+    expect(rate).toBeGreaterThan(0.07);
+    expect(rate).toBeLessThan(0.13);
+  });
+});
+
+describe("Deal and No Deal", () => {
+  it("ends the game at the Offer amount when the Deal is taken", () => {
+    const game = finishRound(atRoundOne());
+    const dealt = gameReducer(game, { type: "ACCEPT_DEAL" });
+
+    expect(dealt.phase).toBe("gameOver");
+    expect(dealt.winnings).toBe(game.offers.at(-1)!.amount);
+  });
+
+  it("stops everything once the Deal is taken", () => {
+    const dealt = gameReducer(finishRound(atRoundOne()), {
+      type: "ACCEPT_DEAL",
+    });
+    const meddled = (
+      [
+        { type: "OPEN_CASE", caseId: openable(dealt)[0].id },
+        { type: "DECLINE_OFFER" },
+        { type: "ACCEPT_DEAL" },
+      ] satisfies GameAction[]
+    ).reduce(gameReducer, dealt);
+
+    expect(meddled).toEqual(dealt);
+  });
+
+  it("advances to the next Round on No Deal", () => {
+    const declined = gameReducer(finishRound(atRoundOne()), {
+      type: "DECLINE_OFFER",
+    });
+
+    expect(declined.phase).toBe("opening");
+    expect(declined.round).toBe(2);
+  });
+
+  it("goes to the Swap Decision when the Round 8 Offer is declined", () => {
+    const { game } = playDecliningEverything(11);
+    const swapping = gameReducer(game, { type: "DECLINE_OFFER" });
+
+    expect(game.round).toBe(8);
+    expect(swapping.phase).toBe("swap");
+    expect(swapping.cases.filter((c) => !c.opened)).toHaveLength(2);
   });
 });
 

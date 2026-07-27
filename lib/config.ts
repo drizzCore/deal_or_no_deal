@@ -17,6 +17,54 @@ export const CASES_PER_ROUND = [5, 4, 3, 2, 1, 1, 1, 1] as const;
 
 export const ROUND_COUNT = CASES_PER_ROUND.length;
 
+/**
+ * What the Bank will pay, as a multiple of Expected Value, per Round.
+ * Early Offers are lowballs; later ones close in on what the board is worth.
+ *
+ * Retune here after playtesting — this is the main lever on how greedy the
+ * game feels.
+ */
+export const OFFER_FACTOR_BANDS: readonly (readonly [number, number])[] = [
+  [0.1, 0.25], // Round 1
+  [0.25, 0.45], // Round 2
+  [0.25, 0.45], // Round 3
+  [0.45, 0.65], // Round 4
+  [0.45, 0.65], // Round 5
+  [0.65, 0.9], // Round 6
+  [0.65, 0.9], // Round 7
+  [0.65, 0.9], // Round 8
+];
+
+/** Roughly one Offer in ten breaks its band, half low and half high. */
+export const WILD_SWING_CHANCE = 0.1;
+/** Floor on an insulting Offer, as a multiple of Expected Value. */
+export const WILD_SWING_FLOOR = 0.05;
+/** Ceiling on a generous Offer. Above this the Bank stops being believable. */
+export const WILD_SWING_CEILING = 1.15;
+
+/**
+ * An Offer may never reach the best outcome still possible — otherwise taking
+ * the Deal is free money and the decision stops being a decision. Binds about
+ * once in ten thousand Offers, when the last two Cases are close in value.
+ */
+export const OFFER_CAP_OF_BEST_IN_PLAY = 0.95;
+
+/**
+ * How hard to round an Offer, by its size. See ADR 0002.
+ *
+ * DO NOT collapse this into a single constant. A fixed step of 100 produces
+ * Offers of exactly ₱0 in one game in twenty-five, and leaves Round 1 with only
+ * six distinct possible Offers — which defeats the point of rolling the factor
+ * fresh every time.
+ */
+export const ROUNDING: readonly { readonly above: number; readonly step: number }[] =
+  [
+    { above: 10_000, step: 1_000 },
+    { above: 1_000, step: 100 },
+    { above: 100, step: 10 },
+    { above: 0, step: 1 },
+  ];
+
 /** Top Prize presets offered in settings. */
 export const TOP_PRIZE_PRESETS = [10_000, 50_000, 100_000, 1_000_000] as const;
 

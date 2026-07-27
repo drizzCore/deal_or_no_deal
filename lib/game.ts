@@ -4,6 +4,7 @@ import {
   ROUND_COUNT,
 } from "./config";
 import { buildLadder } from "./ladder";
+import { makeOffer } from "./offer";
 import { shuffle } from "./rng";
 
 /**
@@ -14,7 +15,19 @@ export type Phase =
   | "intro"
   | "pickingCase"
   | "opening"
-  | "roundComplete";
+  /** A Round has ended and the Bank is waiting on Deal or No Deal. */
+  | "offer"
+  /** Two Cases left, keep or swap. Its own phase, never a ninth Round. */
+  | "swap"
+  | "gameOver";
+
+/** One Offer the Bank has made. The factor is kept for playtesting. */
+export interface Offer {
+  readonly round: number;
+  readonly amount: number;
+  readonly factor: number;
+  readonly wildSwing: boolean;
+}
 
 export interface Case {
   /** Display number, 1-20. Stable for the life of a game. */
@@ -33,6 +46,10 @@ export interface GameState {
   readonly playerCaseId: number | null;
   /** 1-8. Meaningless before a Player's Case is picked. */
   readonly round: number;
+  /** Every Offer made this game, oldest first. */
+  readonly offers: readonly Offer[];
+  /** What the player walked away with. Null until the game ends. */
+  readonly winnings: number | null;
   /** Advanced by every roll. The whole game is reproducible from its start value. */
   readonly seed: number;
 }
@@ -61,6 +78,8 @@ export function newGame({
     })),
     playerCaseId: null,
     round: 1,
+    offers: [],
+    winnings: null,
     seed: shuffled.seed,
   };
 }
@@ -97,7 +116,10 @@ export type GameAction =
   | { readonly type: "START" }
   | { readonly type: "PICK_PLAYER_CASE"; readonly caseId: number }
   | { readonly type: "OPEN_CASE"; readonly caseId: number }
-  | { readonly type: "CONTINUE" };
+  /** Deal. Ends the game at the current Offer. */
+  | { readonly type: "ACCEPT_DEAL" }
+  /** No Deal. Next Round, or the Swap Decision after Round 8. */
+  | { readonly type: "DECLINE_OFFER" };
 
 /**
  * The single seam the game is tested through. Pure: the seed it needs comes
@@ -142,16 +164,41 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         casesOpenedBeforeRound(state.round);
       const roundIsDone = openedThisRound >= CASES_PER_ROUND[state.round - 1];
 
+      if (!roundIsDone) return { ...state, cases };
+
+      const inPlay = cases.filter((c) => !c.opened).map((c) => c.value);
+      const rolled = makeOffer(inPlay, state.round, state.seed);
+
       return {
         ...state,
         cases,
-        phase: roundIsDone ? "roundComplete" : "opening",
+        phase: "offer",
+        seed: rolled.seed,
+        offers: [
+          ...state.offers,
+          {
+            round: state.round,
+            amount: rolled.amount,
+            factor: rolled.factor,
+            wildSwing: rolled.wildSwing,
+          },
+        ],
       };
     }
 
-    case "CONTINUE":
-      if (state.phase !== "roundComplete") return state;
-      if (state.round >= ROUND_COUNT) return state;
-      return { ...state, phase: "opening", round: state.round + 1 };
+    case "ACCEPT_DEAL": {
+      if (state.phase !== "offer") return state;
+      return {
+        ...state,
+        phase: "gameOver",
+        winnings: state.offers.at(-1)!.amount,
+      };
+    }
+
+    case "DECLINE_OFFER":
+      if (state.phase !== "offer") return state;
+      return state.round >= ROUND_COUNT
+        ? { ...state, phase: "swap" }
+        : { ...state, phase: "opening", round: state.round + 1 };
   }
 }

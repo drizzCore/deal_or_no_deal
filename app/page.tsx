@@ -3,6 +3,7 @@
 import { useMemo, useReducer } from "react";
 import { CaseGrid } from "./components/CaseGrid";
 import { LadderColumn } from "./components/LadderColumn";
+import { OfferPanel } from "./components/OfferPanel";
 import { PlayerCase } from "./components/PlayerCase";
 import { ROUND_COUNT, TOP_PRIZE_PRESETS } from "@/lib/config";
 import {
@@ -29,10 +30,12 @@ function statusFor(game: GameState): string {
       const left = casesLeftToOpen(game);
       return `Round ${game.round} — open ${left} more ${left === 1 ? "case" : "cases"}`;
     }
-    case "roundComplete":
-      return game.round >= ROUND_COUNT
-        ? "Two cases left. Yours, and one other."
-        : `Round ${game.round} complete.`;
+    case "offer":
+      return `Round ${game.round} complete. The bank is calling.`;
+    case "swap":
+      return "Two cases left. Yours, and one other.";
+    case "gameOver":
+      return "Game over.";
   }
 }
 
@@ -54,6 +57,7 @@ export default function Home() {
   const highRungs = game.ladder.slice(half);
 
   const playerCase = game.cases.find((c) => c.id === game.playerCaseId);
+  const currentOffer = game.offers.at(-1);
   const mode =
     game.phase === "pickingCase"
       ? "pick"
@@ -137,14 +141,32 @@ export default function Home() {
 
           {playerCase && <PlayerCase briefcase={playerCase} />}
 
-          {game.phase === "roundComplete" && game.round < ROUND_COUNT && (
-            <button
-              type="button"
-              onClick={() => dispatch({ type: "CONTINUE" })}
-              className="self-start rounded-sm bg-brass px-4 py-2 text-sm font-medium text-stage transition-colors hover:bg-brass-hot focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot"
-            >
-              Next round
-            </button>
+          {game.phase === "offer" && currentOffer && (
+            <OfferPanel
+              offer={currentOffer}
+              isFinalOffer={game.round >= ROUND_COUNT}
+              onDeal={() => dispatch({ type: "ACCEPT_DEAL" })}
+              onNoDeal={() => dispatch({ type: "DECLINE_OFFER" })}
+            />
+          )}
+
+          {game.phase === "gameOver" && (
+            <section className="rounded-lg border border-brass-dim bg-stage-lift/80 p-5 text-center">
+              <p className="text-xs tracking-[0.2em] text-brass uppercase">
+                You took the deal
+              </p>
+              <p className="tabular mt-2 font-display text-4xl leading-none text-brass-hot sm:text-5xl">
+                {formatPeso(game.winnings ?? 0)}
+              </p>
+            </section>
+          )}
+
+          {game.phase === "swap" && (
+            <section className="rounded-lg border border-stage-edge bg-stage-lift/60 p-5 text-center">
+              <p className="text-sm text-bone-dim">
+                You held your nerve to the final two.
+              </p>
+            </section>
           )}
         </div>
 
