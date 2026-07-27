@@ -2,11 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   MEDIUM_VARIANT_COUNT,
   OFFER_CAP_OF_BEST_IN_PLAY,
-  OFFER_FACTOR_BANDS,
   ROUNDING,
   TOP_PRIZE_PRESETS,
-  WILD_SWING_CEILING,
-  WILD_SWING_FLOOR,
 } from "./config";
 import {
   bestRefusedOffer,
@@ -276,11 +273,11 @@ describe("the Bank's Offer", () => {
     expect(distanceTo(withPlayer)).toBeLessThan(distanceTo(withoutPlayer));
   });
 
-  it("rolls a fresh factor every time rather than reusing one", () => {
-    const { rounds } = playDecliningEverything(11);
-    const factors = rounds.map((r) => r.offer.factor);
+  it("is a deterministic function of the board, not a roll", () => {
+    const first = playDecliningEverything(11).game.offers.map((o) => o.amount);
+    const again = playDecliningEverything(11).game.offers.map((o) => o.amount);
 
-    expect(new Set(factors).size).toBe(8);
+    expect(again).toEqual(first);
   });
 });
 
@@ -328,33 +325,53 @@ describe("Offer invariants across many games", () => {
     expect(untidy).toHaveLength(0);
   });
 
-  it("keeps ordinary factors inside the Round's band", () => {
-    const outOfBand = everyOffer.filter(({ offer }) => {
-      if (offer.wildSwing) return false;
-      const [low, high] = OFFER_FACTOR_BANDS[offer.round - 1];
-      return offer.factor < low || offer.factor > high;
-    });
+  it("never moves against the board", () => {
+    // Losing a big Case and being offered more for it is the single most
+    // incoherent thing the Bank can do. Found in playtesting: an Offer went
+    // from ₱1,300 to ₱2,300 in the round the ₱10,000 Case was opened.
+    const contradictions: unknown[] = [];
 
-    expect(outOfBand).toHaveLength(0);
+    for (let seed = 1; seed <= SEEDS; seed++) {
+      const { rounds } = playDecliningEverything(seed);
+      for (let i = 1; i < rounds.length; i++) {
+        const [before, now] = [rounds[i - 1], rounds[i]];
+        const worse = now.offer.expectedValue < before.offer.expectedValue;
+        const better = now.offer.expectedValue > before.offer.expectedValue;
+
+        // The one legitimate exception: if the cheapest Case still In Play has
+        // risen past the old Offer, that Offer is now dominated and the floor
+        // from ADR 0005 must win. A dominated Offer is the worse defect.
+        const floorForcedIt = before.offer.amount <= Math.min(...now.inPlay);
+
+        if (worse && now.offer.amount > before.offer.amount && !floorForcedIt) {
+          contradictions.push({ seed, round: now.offer.round });
+        }
+        if (better && now.offer.amount < before.offer.amount) {
+          contradictions.push({ seed, round: now.offer.round });
+        }
+      }
+    }
+
+    expect(contradictions).toEqual([]);
   });
 
-  it("keeps wild swings inside their caps", () => {
-    const swings = everyOffer.filter(({ offer }) => offer.wildSwing);
-    const outOfCap = swings.filter(
-      ({ offer }) =>
-        offer.factor < WILD_SWING_FLOOR || offer.factor > WILD_SWING_CEILING,
-    );
+  it("pays a larger share of the board as Rounds progress", () => {
+    const byRound = new Map<number, number[]>();
+    for (const { offer } of everyOffer) {
+      byRound.set(offer.round, [
+        ...(byRound.get(offer.round) ?? []),
+        offer.amount / offer.expectedValue,
+      ]);
+    }
 
-    expect(swings.length).toBeGreaterThan(0);
-    expect(outOfCap).toHaveLength(0);
-  });
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const shares = [...byRound.keys()]
+      .sort((a, b) => a - b)
+      .map((round) => mean(byRound.get(round)!));
 
-  it("fires wild swings on roughly one Offer in ten", () => {
-    const rate = everyOffer.filter(({ offer }) => offer.wildSwing).length /
-      everyOffer.length;
-
-    expect(rate).toBeGreaterThan(0.07);
-    expect(rate).toBeLessThan(0.13);
+    expect(shares[0]).toBeLessThan(shares.at(-1)!);
+    expect(shares[0]).toBeLessThan(0.3);
+    expect(shares.at(-1)!).toBeGreaterThan(0.6);
   });
 });
 

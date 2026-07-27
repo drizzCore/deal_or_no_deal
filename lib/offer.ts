@@ -1,39 +1,27 @@
 import {
   OFFER_CAP_OF_BEST_IN_PLAY,
-  OFFER_FACTOR_BANDS,
+  OFFER_COEFFICIENTS,
   ROUNDING,
-  WILD_SWING_CEILING,
-  WILD_SWING_CHANCE,
-  WILD_SWING_FLOOR,
 } from "./config";
-import { roll, rollBetween } from "./rng";
 
-export interface OfferRoll {
+export interface OfferResult {
   readonly amount: number;
+  /**
+   * The mean of everything In Play when this Offer was made.
+   *
+   * Kept so the next Offer can tell whether the board got better or worse.
+   * **Never render this.** Showing the player Expected Value hands them a
+   * solver and the game collapses into arithmetic.
+   */
+  readonly expectedValue: number;
+  /** The multiple of Expected Value actually paid, after clamping. */
   readonly factor: number;
-  readonly wildSwing: boolean;
-  readonly seed: number;
 }
 
-/**
- * A fresh multiplier every time — never a reused one, or the Offer becomes
- * predictable and the player stops paying attention to it.
- */
-function rollFactor(round: number, seed: number) {
-  const [low, high] = OFFER_FACTOR_BANDS[round - 1];
-  const chance = roll(seed);
-
-  if (chance.value < WILD_SWING_CHANCE) {
-    const direction = roll(chance.seed);
-    const swung =
-      direction.value < 0.5
-        ? rollBetween(direction.seed, WILD_SWING_FLOOR, low)
-        : rollBetween(direction.seed, high, WILD_SWING_CEILING);
-    return { factor: swung.value, wildSwing: true, seed: swung.seed };
-  }
-
-  const ordinary = rollBetween(chance.seed, low, high);
-  return { factor: ordinary.value, wildSwing: false, seed: ordinary.seed };
+/** What the previous Offer was, and what the board was worth at the time. */
+export interface PreviousOffer {
+  readonly amount: number;
+  readonly expectedValue: number;
 }
 
 const stepFor = (amount: number) =>
@@ -42,8 +30,8 @@ const stepFor = (amount: number) =>
 /**
  * The coarsest step that still leaves a clean amount strictly inside the band
  * between the worst and best Cases. Without this, a narrow band can have no
- * representable value inside it — ₱2,000 and ₱2,100 admit nothing at all at a
- * ₱100 step.
+ * representable value inside it — ₱2,000 and ₱2,100 admit nothing at a ₱100
+ * step.
  */
 function stepThatFitsBetween(worst: number, best: number): number {
   for (const { step } of ROUNDING) {
@@ -61,23 +49,36 @@ function stepThatFitsBetween(worst: number, best: number): number {
 export function makeOffer(
   inPlay: readonly number[],
   round: number,
-  seed: number,
-): OfferRoll {
+  previous: PreviousOffer | null,
+): OfferResult {
   const expectedValue =
     inPlay.reduce((sum, value) => sum + value, 0) / inPlay.length;
-  const { factor, wildSwing, seed: next } = rollFactor(round, seed);
 
   const worst = Math.min(...inPlay);
   const best = Math.max(...inPlay);
 
-  // An Offer may never reach the best outcome still possible, or taking the
-  // Deal becomes free money and the decision stops being a decision.
-  const cap = best * OFFER_CAP_OF_BEST_IN_PLAY;
+  let raw = expectedValue * OFFER_COEFFICIENTS[round - 1];
 
-  // Nor may it sit at or below the worst, because refusing always yields one
-  // of the remaining values — so the player would be strictly worse off for
-  // accepting. See ADR 0005. Early on this never binds: the worst Case is ₱1.
-  const target = Math.min(Math.max(expectedValue * factor, worst), cap);
+  // The Offer may never move against the board. Losing a big Case and being
+  // offered more for it is the single most incoherent thing the Bank can do.
+  // See ADR 0006.
+  if (previous) {
+    // A worse board drags the Offer down in proportion to what was lost, so a
+    // bad Round reads as a bad Round rather than the Bank simply holding firm.
+    const drift = (previous.amount * expectedValue) / previous.expectedValue;
+
+    if (expectedValue < previous.expectedValue) {
+      raw = Math.min(raw, drift);
+    } else if (expectedValue > previous.expectedValue) {
+      raw = Math.max(raw, previous.amount);
+    }
+  }
+
+  // An Offer may never reach the best outcome still possible, or taking the
+  // Deal becomes free money. Nor may it sit at or below the worst, because
+  // refusing always yields one of the remaining values. See ADR 0005.
+  const cap = best * OFFER_CAP_OF_BEST_IN_PLAY;
+  const target = Math.min(Math.max(raw, worst), cap);
 
   const step = Math.min(stepFor(target), stepThatFitsBetween(worst, best));
   let amount = Math.round(target / step) * step;
@@ -91,5 +92,7 @@ export function makeOffer(
     amount = Math.min(cap, Math.max(worst + 1, Math.round((worst + best) / 2)));
   }
 
-  return { amount: Math.max(1, Math.round(amount)), factor, wildSwing, seed: next };
+  amount = Math.max(1, Math.round(amount));
+
+  return { amount, expectedValue, factor: amount / expectedValue };
 }

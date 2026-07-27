@@ -18,29 +18,24 @@ export const CASES_PER_ROUND = [5, 4, 3, 2, 1, 1, 1, 1] as const;
 export const ROUND_COUNT = CASES_PER_ROUND.length;
 
 /**
- * What the Bank will pay, as a multiple of Expected Value, per Round.
- * Early Offers are lowballs; later ones close in on what the board is worth.
+ * What the Bank pays, as a multiple of Expected Value, per Round.
  *
- * Retune here after playtesting — this is the main lever on how greedy the
- * game feels.
+ * A smooth ramp of +0.10 a Round: early Offers are lowballs, later ones close
+ * on what the board is actually worth. This is the main lever on how greedy
+ * the game feels — retune here after playtesting.
+ *
+ * There is deliberately no randomness. See ADR 0006.
  */
-export const OFFER_FACTOR_BANDS: readonly (readonly [number, number])[] = [
-  [0.1, 0.25], // Round 1
-  [0.25, 0.45], // Round 2
-  [0.25, 0.45], // Round 3
-  [0.45, 0.65], // Round 4
-  [0.45, 0.65], // Round 5
-  [0.65, 0.9], // Round 6
-  [0.65, 0.9], // Round 7
-  [0.65, 0.9], // Round 8
+export const OFFER_COEFFICIENTS: readonly number[] = [
+  0.18, // Round 1
+  0.28, // Round 2
+  0.38, // Round 3
+  0.48, // Round 4
+  0.58, // Round 5
+  0.68, // Round 6
+  0.78, // Round 7
+  0.88, // Round 8
 ];
-
-/** Roughly one Offer in ten breaks its band, half low and half high. */
-export const WILD_SWING_CHANCE = 0.1;
-/** Floor on an insulting Offer, as a multiple of Expected Value. */
-export const WILD_SWING_FLOOR = 0.05;
-/** Ceiling on a generous Offer. Above this the Bank stops being believable. */
-export const WILD_SWING_CEILING = 1.15;
 
 /**
  * An Offer may never reach the best outcome still possible — otherwise taking

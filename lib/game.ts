@@ -41,12 +41,18 @@ export interface Reveal {
   readonly sequence: number;
 }
 
-/** One Offer the Bank has made. The factor is kept for playtesting. */
+/** One Offer the Bank has made. */
 export interface Offer {
   readonly round: number;
   readonly amount: number;
+  /** Multiple of Expected Value actually paid, after clamping. Playtesting aid. */
   readonly factor: number;
-  readonly wildSwing: boolean;
+  /**
+   * What the board was worth when this Offer was made, so the next Offer can
+   * tell whether it improved or got worse. **Never render this** — see
+   * `OfferResult.expectedValue`.
+   */
+  readonly expectedValue: number;
 }
 
 export interface Case {
@@ -265,21 +271,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       const inPlay = cases.filter((c) => !c.opened).map((c) => c.value);
-      const rolled = makeOffer(inPlay, state.round, picked.seed);
+      const rolled = makeOffer(inPlay, state.round, state.offers.at(-1) ?? null);
 
       return {
         ...state,
         cases,
         lastReveal: reveal,
         phase: "offer",
-        seed: rolled.seed,
+        seed: picked.seed,
         offers: [
           ...state.offers,
           {
             round: state.round,
             amount: rolled.amount,
             factor: rolled.factor,
-            wildSwing: rolled.wildSwing,
+            expectedValue: rolled.expectedValue,
           },
         ],
       };

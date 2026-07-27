@@ -10,9 +10,11 @@ Read ADR 0002 before starting. The rounding approach looks like needless complex
 
 Expected Value is the mean of every value In Play **including the Player's Case**, whose value is unknown to the player but still counts toward the average.
 
-The factor is rolled fresh inside the Round's band every single time — never a reused multiplier. Bands: 0.10–0.25 for Round 1, 0.25–0.45 for Rounds 2–3, 0.45–0.65 for Rounds 4–5, 0.65–0.90 for Rounds 6–8.
+~~The factor is rolled fresh inside the Round's band every single time — never a reused multiplier. Bands: 0.10–0.25 for Round 1, 0.25–0.45 for Rounds 2–3, 0.45–0.65 for Rounds 4–5, 0.65–0.90 for Rounds 6–8.~~
 
-Wild swing: 10% of Offers roll outside the band, half low and half high — down to 0.05 × Expected Value or up to 1.15 × Expected Value.
+~~Wild swing: 10% of Offers roll outside the band, half low and half high — down to 0.05 × Expected Value or up to 1.15 × Expected Value.~~
+
+**Reversed after playtesting — see ADR 0006.** Both the bands and the wild swing are gone. The coefficient is a fixed ramp of +0.10 a Round (0.18 → 0.88), and the Offer may never move against Expected Value. The rising bands were making the Bank pay *more* after the player lost a big Case, on 37% of bad Rounds.
 
 Rounding is a tier table, not a constant:
 
@@ -29,8 +31,8 @@ otherwise      → step     ₱1
 
 - [x] An Offer is presented after every Round, including Round 8
 - [x] Expected Value counts the Player's Case
-- [x] The factor is re-rolled inside the Round band on every Offer
-- [x] Wild swings fire on roughly 10% of Offers, in both directions
+- [~] ~~The factor is re-rolled inside the Round band on every Offer~~ — replaced by a fixed ramp, ADR 0006
+- [~] ~~Wild swings fire on roughly 10% of Offers, in both directions~~ — removed, ADR 0006
 - [x] The Offer is clamped to 95% of the highest value In Play
 - [x] The Offer is floored at ₱1
 - [x] Offers are rounded by the tier table above
@@ -41,5 +43,5 @@ otherwise      → step     ₱1
 - [x] Tests, across many thousands of seeded games: no Offer is ever ₱0
 - [x] Tests: no Offer ever exceeds 95% of the highest value In Play
 - [x] Tests: every Offer is a whole number matching its rounding tier
-- [x] Tests: factors stay inside the Round band except on wild swings, which stay inside their caps
+- [x] Tests: the Offer never moves against Expected Value, and pays a larger share of the board as Rounds progress
 - [x] Tests: taking the Deal terminates the game and no further Offers or openings are possible

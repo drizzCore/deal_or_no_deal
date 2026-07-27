@@ -161,9 +161,9 @@ The generator is the fallback for every other Top Prize and is verified to produ
 
 Expected Value is the mean of every value In Play, including the Player's Case. The Offer is Expected Value × a factor rolled fresh every time inside the Round's band — never a reused multiplier.
 
-Factor bands by Round are unchanged from the original spec: 0.10–0.25 for Round 1, 0.25–0.45 for Rounds 2–3, 0.45–0.65 for Rounds 4–5, 0.65–0.90 for Rounds 6–8.
+**Superseded by ADR 0006.** The random factor bands and the wild swing are gone. The coefficient is a fixed, smooth ramp of +0.10 a Round, from 0.18 at Round 1 to 0.88 at Round 8, and the Offer may never move against Expected Value — a worse board drags it down in proportion, a better board can only lift it.
 
-**Wild swing:** 10% of Offers roll outside the band, half low and half high — down to 0.05 × Expected Value or up to 1.15 × Expected Value.
+This was forced by playtesting: an Offer rose from ₱1,300 to ₱2,300 in the Round the ₱10,000 Case was opened. The rising band outran the falling Expected Value, which happened on 37% of bad Rounds. Removing only the randomness would have left it at 32%.
 
 **Two guards, both load-bearing:**
 
