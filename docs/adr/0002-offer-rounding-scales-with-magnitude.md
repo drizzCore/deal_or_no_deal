@@ -1,5 +1,7 @@
 # Offer rounding step scales with the offer's magnitude
 
+> **Partly superseded by ADR 0005.** The rounding tier table below still stands, but the step is now additionally narrowed when the band between the worst and best Cases In Play is too tight to admit a clean value.
+
 The spec called for a single `ROUND_TO = 100` constant. Simulating 20,000 games on the ₱10,000 ladder showed this breaks two requirements at once.
 
 Offers of exactly **₱0** appeared in 0.5% of all offers — roughly one game in twenty-five — because late-round Expected Value can fall below ₱100 entirely. And rounding to ₱100 quantised the randomness away: across 20,000 games, round 1 produced only **six** distinct offers ever (₱100–₱600), directly defeating the spec's own requirement that offers "never be reverse-engineered."

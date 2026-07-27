@@ -298,6 +298,17 @@ describe("Offer invariants across many games", () => {
     expect(zeroes).toHaveLength(0);
   });
 
+  it("always lands strictly between the worst and best Cases In Play", () => {
+    // Refusing always yields one of the remaining values, so an Offer at or
+    // below the cheapest is strictly dominated — the player can only lose by
+    // taking it. Found in playtesting: ₱660 offered against ₱700 and ₱1,500.
+    const dominated = everyOffer.filter(
+      ({ offer, inPlay }) => offer.amount <= Math.min(...inPlay),
+    );
+
+    expect(dominated).toHaveLength(0);
+  });
+
   it("never exceeds 95% of the best Case still In Play", () => {
     const overCap = everyOffer.filter(
       ({ offer, inPlay }) =>

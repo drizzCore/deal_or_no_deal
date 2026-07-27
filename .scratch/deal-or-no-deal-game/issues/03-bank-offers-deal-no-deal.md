@@ -23,7 +23,9 @@ above    ₱100  → step    ₱10
 otherwise      → step     ₱1
 ```
 
-An Offer landing below the cheapest Case In Play is **correct behaviour** and must not be guarded against. It is an insulting Offer the player should refuse, and occurs in roughly 1% of Offers.
+~~An Offer landing below the cheapest Case In Play is **correct behaviour** and must not be guarded against. It is an insulting Offer the player should refuse, and occurs in roughly 1% of Offers.~~
+
+**Reversed after playtesting — see ADR 0005.** The Bank offered ₱660 against ₱700 and ₱1,500 still on the board, and it read as broken rather than insulting. Refusing always yields one of the remaining values, so an Offer at or below the cheapest is strictly dominated — a non-decision, not a hard one. Offers are now clamped strictly between the worst and best Cases In Play.
 
 - [x] An Offer is presented after every Round, including Round 8
 - [x] Expected Value counts the Player's Case

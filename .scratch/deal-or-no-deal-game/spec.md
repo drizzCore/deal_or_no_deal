@@ -179,7 +179,9 @@ above    ₱100  → step    ₱10
 otherwise      → step     ₱1
 ```
 
-An Offer below the cheapest Case In Play is **left in deliberately** (about 1.1% of Offers). It is an insulting Offer the player should refuse — a real beat, not a defect.
+An Offer must land **strictly between the worst and best Cases In Play** — above the cheapest, and capped at 95% of the best.
+
+This reverses an earlier decision. The spec originally left sub-minimum Offers in deliberately, as insulting-but-real. Playtesting killed it: ₱660 against ₱700 and ₱1,500 reads as broken, because refusing always yields one of the remaining values and so an Offer at or below the cheapest is strictly dominated. See ADR 0005. Early Rounds are unaffected — the cheapest Case is ₱1 until the low end is eliminated.
 
 ### Game state
 

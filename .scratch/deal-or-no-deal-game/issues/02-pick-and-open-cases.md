@@ -1,6 +1,8 @@
 # 02 — Pick your Case and open Cases
 
-**What to build:** The player picks one Case as their Player's Case and it visibly leaves the grid to sit apart. They then open other Cases one at a time by tapping them. Each opened Case stays on the board showing its value, and the matching rung of the Prize Ladder goes dark immediately. The player always knows which Round they are in and how many Cases they still have to open.
+**What to build:** The player picks one Case as their Player's Case and it is set aside on its own pedestal, leaving an empty socket in its grid slot.
+
+> **Revised after playtesting.** This originally removed the Case from the grid entirely, which reflowed the other nineteen into new positions and destroyed the board the player had been reading. Every Case now keeps its slot for the whole game. They then open other Cases one at a time by tapping them. Each opened Case stays on the board showing its value, and the matching rung of the Prize Ladder goes dark immediately. The player always knows which Round they are in and how many Cases they still have to open.
 
 Round 1 is fully playable. There is no Offer yet — the game simply stops once the Round's Cases are open.
 

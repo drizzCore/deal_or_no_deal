@@ -24,14 +24,12 @@ export function CaseGrid({
   armingCaseId,
   onSelect,
 }: CaseGridProps) {
-  // Once picked, the Player's Case leaves the grid for its own pedestal.
-  const onBoard = cases.filter((c) => c.id !== playerCaseId);
-
-  // Derived from the grid's own geometry rather than measured, so the
-  // spotlight needs no layout effect and no state.
+  // Every Case keeps its slot for the whole game. Taking the Player's Case out
+  // of the grid would reflow all nineteen others and destroy the board the
+  // player has been reading — its slot becomes an empty socket instead.
   const columns = useMediaQuery(WIDE) ? 5 : 4;
-  const rows = Math.max(1, Math.ceil(onBoard.length / columns));
-  const armedIndex = onBoard.findIndex((c) => c.id === armingCaseId);
+  const rows = Math.max(1, Math.ceil(cases.length / columns));
+  const armedIndex = cases.findIndex((c) => c.id === armingCaseId);
   const lit = armedIndex >= 0;
 
   return (
@@ -50,20 +48,36 @@ export function CaseGrid({
       />
 
       <ul className="grid w-full grid-cols-4 gap-2.5 sm:grid-cols-5 sm:gap-3">
-        {onBoard.map((briefcase) => (
-          <li key={briefcase.id}>
-            <CaseTile
-              briefcase={briefcase}
-              arming={briefcase.id === armingCaseId}
-              onSelect={mode === "idle" || briefcase.opened ? null : onSelect}
-              label={
-                mode === "pick"
-                  ? `Keep case ${briefcase.id}`
-                  : `Open case ${briefcase.id}`
-              }
-            />
-          </li>
-        ))}
+        {cases.map((briefcase) =>
+          briefcase.id === playerCaseId ? (
+            <li key={briefcase.id}>
+              <div className="case-socket flex aspect-[5/4] w-full items-center justify-center rounded-md">
+                <span className="sr-only">
+                  Case {briefcase.id} is yours, set aside
+                </span>
+                <span
+                  aria-hidden
+                  className="tabular font-display text-2xl leading-none text-brass-dim sm:text-3xl"
+                >
+                  {briefcase.id}
+                </span>
+              </div>
+            </li>
+          ) : (
+            <li key={briefcase.id}>
+              <CaseTile
+                briefcase={briefcase}
+                arming={briefcase.id === armingCaseId}
+                onSelect={mode === "idle" || briefcase.opened ? null : onSelect}
+                label={
+                  mode === "pick"
+                    ? `Keep case ${briefcase.id}`
+                    : `Open case ${briefcase.id}`
+                }
+              />
+            </li>
+          ),
+        )}
       </ul>
     </div>
   );
