@@ -4,11 +4,13 @@ import { useMemo, useReducer } from "react";
 import { CaseGrid } from "./components/CaseGrid";
 import { GameOver } from "./components/GameOver";
 import { LadderColumn } from "./components/LadderColumn";
+import { OfferHistory } from "./components/OfferHistory";
 import { OfferPanel } from "./components/OfferPanel";
 import { PlayerCase } from "./components/PlayerCase";
 import { SwapDecision } from "./components/SwapDecision";
 import { ROUND_COUNT, TOP_PRIZE_PRESETS } from "@/lib/config";
 import {
+  bestRefusedOffer,
   casesLeftToOpen,
   gameReducer,
   newGame,
@@ -154,12 +156,18 @@ export default function Home() {
           {playerCase && <PlayerCase briefcase={playerCase} />}
 
           {game.phase === "offer" && currentOffer && (
-            <OfferPanel
-              offer={currentOffer}
-              isFinalOffer={game.round >= ROUND_COUNT}
-              onDeal={() => dispatch({ type: "ACCEPT_DEAL" })}
-              onNoDeal={() => dispatch({ type: "DECLINE_OFFER" })}
-            />
+            <>
+              <OfferPanel
+                offer={currentOffer}
+                isFinalOffer={game.round >= ROUND_COUNT}
+                onDeal={() => dispatch({ type: "ACCEPT_DEAL" })}
+                onNoDeal={() => dispatch({ type: "DECLINE_OFFER" })}
+              />
+              <OfferHistory
+                offers={game.offers}
+                bestRefused={bestRefusedOffer(game)}
+              />
+            </>
           )}
 
           {game.phase === "swap" && playerCase && otherCase && (

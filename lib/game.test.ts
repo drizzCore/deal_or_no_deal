@@ -8,6 +8,7 @@ import {
   WILD_SWING_FLOOR,
 } from "./config";
 import {
+  bestRefusedOffer,
   gameReducer,
   newGame,
   type GameAction,
@@ -385,6 +386,61 @@ describe("Deal and No Deal", () => {
     expect(game.round).toBe(8);
     expect(swapping.phase).toBe("swap");
     expect(swapping.cases.filter((c) => !c.opened)).toHaveLength(2);
+  });
+});
+
+describe("the Offer History", () => {
+  it("records every Offer in the order the Bank made them", () => {
+    const { game, rounds } = playDecliningEverything(11);
+
+    expect(game.offers).toHaveLength(8);
+    expect(game.offers.map((o) => o.round)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(game.offers.map((o) => o.amount)).toEqual(
+      rounds.map((r) => r.offer.amount),
+    );
+  });
+
+  it("grows by exactly one Offer per Round", () => {
+    let game = atRoundOne(11);
+    for (let round = 1; round <= 8; round++) {
+      game = finishRound(game);
+      expect(game.offers).toHaveLength(round);
+      if (round < 8) game = gameReducer(game, { type: "DECLINE_OFFER" });
+    }
+  });
+
+  it("has nothing refused yet in Round 1", () => {
+    const first = finishRound(atRoundOne(11));
+
+    expect(bestRefusedOffer(first)).toBeNull();
+  });
+
+  it("excludes the Offer currently on the table", () => {
+    let game = finishRound(atRoundOne(11));
+    const roundOne = game.offers[0];
+    game = finishRound(gameReducer(game, { type: "DECLINE_OFFER" }));
+
+    // Round 2's Offer is live and undecided, so it cannot be "refused".
+    expect(bestRefusedOffer(game)).toEqual(roundOne);
+  });
+
+  it("reports the highest Offer already turned down, whenever it came", () => {
+    for (let seed = 1; seed <= 100; seed++) {
+      let game = atRoundOne(seed);
+      for (let round = 1; round <= 8; round++) {
+        game = finishRound(game);
+        const refused = game.offers.slice(0, -1);
+        const best = bestRefusedOffer(game);
+
+        if (refused.length === 0) {
+          expect(best).toBeNull();
+        } else {
+          expect(best!.amount).toBe(Math.max(...refused.map((o) => o.amount)));
+          expect(refused).toContainEqual(best);
+        }
+        if (round < 8) game = gameReducer(game, { type: "DECLINE_OFFER" });
+      }
+    }
   });
 });
 

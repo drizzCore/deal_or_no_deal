@@ -96,6 +96,22 @@ export function newGame({
   };
 }
 
+/**
+ * The highest Offer the player has already turned down, or null in Round 1.
+ *
+ * Deliberately excludes the most recent Offer: during the `offer` phase that
+ * one is still on the table and has not been refused. This is what makes the
+ * "best so far" line a reminder of what they gave up rather than a restatement
+ * of what they are looking at.
+ */
+export function bestRefusedOffer(state: GameState): Offer | null {
+  const refused = state.offers.slice(0, -1);
+  if (refused.length === 0) return null;
+  return refused.reduce((best, offer) =>
+    offer.amount > best.amount ? offer : best,
+  );
+}
+
 /** The Case still In Play that the player is not holding. */
 export function otherRemainingCase(state: GameState): Case | undefined {
   return state.cases.find((c) => !c.opened && c.id !== state.playerCaseId);

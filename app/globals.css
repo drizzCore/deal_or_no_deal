@@ -11,6 +11,11 @@
   --color-brass-hot: #f2d06b;
   --color-brass-dim: #6b5a1f;
 
+  /* An Offer going up or down. Never the only signal — always paired with
+     a direction arrow and a signed amount. */
+  --color-rise: #4fa97a;
+  --color-fall: #d9645a;
+
   /* Warm off-white — white glares against the stage. */
   --color-bone: #ede8dc;
   --color-bone-dim: #9aa1ae;
