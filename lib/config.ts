@@ -6,6 +6,17 @@
 /** Number of Cases on the board. The Round structure below depends on this. */
 export const CASE_COUNT = 20;
 
+/**
+ * How many Cases each Round opens.
+ *
+ * These sum to 18 — the nineteen Cases the player did not pick, minus the one
+ * that must survive to face them in the Swap Decision. The arithmetic is
+ * load-bearing and silent if broken; it is covered by tests.
+ */
+export const CASES_PER_ROUND = [5, 4, 3, 2, 1, 1, 1, 1] as const;
+
+export const ROUND_COUNT = CASES_PER_ROUND.length;
+
 /** Top Prize presets offered in settings. */
 export const TOP_PRIZE_PRESETS = [10_000, 50_000, 100_000, 1_000_000] as const;
 

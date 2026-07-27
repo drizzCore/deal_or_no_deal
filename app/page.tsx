@@ -1,10 +1,16 @@
 "use client";
 
-import { useReducer } from "react";
+import { useMemo, useReducer } from "react";
 import { CaseGrid } from "./components/CaseGrid";
 import { LadderColumn } from "./components/LadderColumn";
-import { TOP_PRIZE_PRESETS } from "@/lib/config";
-import { gameReducer, newGame } from "@/lib/game";
+import { PlayerCase } from "./components/PlayerCase";
+import { ROUND_COUNT, TOP_PRIZE_PRESETS } from "@/lib/config";
+import {
+  casesLeftToOpen,
+  gameReducer,
+  newGame,
+  type GameState,
+} from "@/lib/game";
 import { formatPeso } from "@/lib/money";
 
 /**
@@ -13,8 +19,22 @@ import { formatPeso } from "@/lib/money";
  */
 const FIRST_BOARD_SEED = 20260727;
 
-/** Nothing is opened yet — Cases become openable in ticket 02. */
-const NOTHING_ELIMINATED: ReadonlySet<number> = new Set();
+function statusFor(game: GameState): string {
+  switch (game.phase) {
+    case "intro":
+      return "Twenty cases. One is yours.";
+    case "pickingCase":
+      return "Pick the case you'll keep.";
+    case "opening": {
+      const left = casesLeftToOpen(game);
+      return `Round ${game.round} — open ${left} more ${left === 1 ? "case" : "cases"}`;
+    }
+    case "roundComplete":
+      return game.round >= ROUND_COUNT
+        ? "Two cases left. Yours, and one other."
+        : `Round ${game.round} complete.`;
+  }
+}
 
 export default function Home() {
   const [game, dispatch] = useReducer(
@@ -23,20 +43,46 @@ export default function Home() {
     newGame,
   );
 
+  const eliminated = useMemo(
+    () =>
+      new Set(game.cases.filter((c) => c.opened).map((c) => c.value)),
+    [game.cases],
+  );
+
   const half = Math.ceil(game.ladder.length / 2);
   const lowRungs = game.ladder.slice(0, half);
   const highRungs = game.ladder.slice(half);
 
+  const playerCase = game.cases.find((c) => c.id === game.playerCaseId);
+  const mode =
+    game.phase === "pickingCase"
+      ? "pick"
+      : game.phase === "opening"
+        ? "open"
+        : "idle";
+
+  const onSelect = (caseId: number) =>
+    dispatch(
+      game.phase === "pickingCase"
+        ? { type: "PICK_PLAYER_CASE", caseId }
+        : { type: "OPEN_CASE", caseId },
+    );
+
+  const ladders = (
+    <>
+      <LadderColumn values={lowRungs} eliminated={eliminated} />
+      <LadderColumn values={highRungs} eliminated={eliminated} align="right" />
+    </>
+  );
+
   return (
-    <main className="stage-wash flex flex-1 flex-col items-center px-4 pt-6 pb-12 sm:px-6">
+    <main className="stage-wash relative flex flex-1 flex-col items-center px-4 pt-6 pb-12 sm:px-6">
       <header className="flex w-full max-w-5xl flex-col gap-3 border-b border-stage-edge pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-3xl leading-none tracking-wide text-bone sm:text-4xl">
             DEAL OR NO DEAL
           </h1>
-          <p className="mt-1.5 text-sm text-bone-dim">
-            Twenty cases. One is yours.
-          </p>
+          <p className="mt-1.5 text-sm text-bone-dim">{statusFor(game)}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -67,7 +113,7 @@ export default function Home() {
             onClick={() => dispatch({ type: "NEW_GAME" })}
             className="rounded-sm border border-stage-edge px-2.5 py-1.5 text-xs text-bone-dim transition-colors hover:border-brass-dim hover:text-bone focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot"
           >
-            Reshuffle
+            New game
           </button>
         </div>
       </header>
@@ -75,29 +121,65 @@ export default function Home() {
       <div className="mt-6 grid w-full max-w-5xl gap-5 lg:grid-cols-[auto_1fr_auto] lg:gap-8">
         {/* On phones the ladder sits above the board. Ticket 10 pins it to the
             viewport properly; this is the honest interim layout. */}
-        <div className="grid grid-cols-2 gap-x-4 lg:hidden">
-          <LadderColumn values={lowRungs} eliminated={NOTHING_ELIMINATED} />
-          <LadderColumn
-            values={highRungs}
-            eliminated={NOTHING_ELIMINATED}
-            align="right"
+        <div className="grid grid-cols-2 gap-x-4 lg:hidden">{ladders}</div>
+
+        <div className="hidden lg:block">
+          <LadderColumn values={lowRungs} eliminated={eliminated} />
+        </div>
+
+        <div className="flex flex-col gap-5">
+          <CaseGrid
+            cases={game.cases}
+            playerCaseId={game.playerCaseId}
+            mode={mode}
+            onSelect={onSelect}
           />
-        </div>
 
-        <div className="hidden lg:block">
-          <LadderColumn values={lowRungs} eliminated={NOTHING_ELIMINATED} />
-        </div>
+          {playerCase && <PlayerCase briefcase={playerCase} />}
 
-        <CaseGrid cases={game.cases} />
+          {game.phase === "roundComplete" && game.round < ROUND_COUNT && (
+            <button
+              type="button"
+              onClick={() => dispatch({ type: "CONTINUE" })}
+              className="self-start rounded-sm bg-brass px-4 py-2 text-sm font-medium text-stage transition-colors hover:bg-brass-hot focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot"
+            >
+              Next round
+            </button>
+          )}
+        </div>
 
         <div className="hidden lg:block">
           <LadderColumn
             values={highRungs}
-            eliminated={NOTHING_ELIMINATED}
+            eliminated={eliminated}
             align="right"
           />
         </div>
       </div>
+
+      {game.phase === "intro" && (
+        // Fixed, not absolute: <main> is taller than the viewport, so an
+        // absolute overlay centres against the page and puts the start button
+        // below the fold on short screens.
+        <div className="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto bg-stage/85 px-6 py-8 backdrop-blur-[2px]">
+          <div className="w-full max-w-sm rounded-lg border border-stage-edge bg-stage-lift p-6 text-center">
+            <h2 className="font-display text-2xl tracking-wide text-bone">
+              READY?
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-bone-dim">
+              Keep one case. Open the rest across eight rounds. The bank will
+              try to buy you out — take the money, or hold your nerve.
+            </p>
+            <button
+              type="button"
+              onClick={() => dispatch({ type: "START" })}
+              className="mt-5 w-full rounded-sm bg-brass px-4 py-2.5 text-sm font-medium text-stage transition-colors hover:bg-brass-hot focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot"
+            >
+              Start the game
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
