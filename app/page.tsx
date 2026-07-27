@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useReducer } from "react";
+import { useMemo, useReducer, useState } from "react";
+import { useGameAudio } from "./hooks/useGameAudio";
 import { CaseGrid } from "./components/CaseGrid";
 import { GameOver } from "./components/GameOver";
 import { LadderColumn } from "./components/LadderColumn";
 import { OfferHistory } from "./components/OfferHistory";
 import { OfferPanel } from "./components/OfferPanel";
 import { PlayerCase } from "./components/PlayerCase";
+import { SoundControl } from "./components/SoundControl";
 import { SwapDecision } from "./components/SwapDecision";
 import { ROUND_COUNT, TOP_PRIZE_PRESETS } from "@/lib/config";
 import {
@@ -50,6 +52,11 @@ export default function Home() {
     { seed: FIRST_BOARD_SEED },
     newGame,
   );
+
+  const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(0.7);
+  const audioSettings = useMemo(() => ({ muted, volume }), [muted, volume]);
+  const { unlock, play } = useGameAudio(game, audioSettings);
 
   const eliminated = useMemo(
     () =>
@@ -104,6 +111,12 @@ export default function Home() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <SoundControl
+            muted={muted}
+            volume={volume}
+            onMutedChange={setMuted}
+            onVolumeChange={setVolume}
+          />
           <span className="mr-1 text-xs tracking-wide text-bone-faint uppercase">
             Top prize
           </span>
@@ -113,7 +126,10 @@ export default function Home() {
               <button
                 key={prize}
                 type="button"
-                onClick={() => dispatch({ type: "NEW_GAME", topPrize: prize })}
+                onClick={() => {
+                  play("uiClick");
+                  dispatch({ type: "NEW_GAME", topPrize: prize });
+                }}
                 className={[
                   "tabular rounded-sm px-2.5 py-1.5 text-xs transition-colors",
                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot",
@@ -128,7 +144,10 @@ export default function Home() {
           })}
           <button
             type="button"
-            onClick={() => dispatch({ type: "NEW_GAME" })}
+            onClick={() => {
+              play("uiClick");
+              dispatch({ type: "NEW_GAME" });
+            }}
             className="rounded-sm border border-stage-edge px-2.5 py-1.5 text-xs text-bone-dim transition-colors hover:border-brass-dim hover:text-bone focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot"
           >
             New game
@@ -213,7 +232,11 @@ export default function Home() {
             </p>
             <button
               type="button"
-              onClick={() => dispatch({ type: "START" })}
+              onClick={() => {
+                // The gesture that satisfies the browser's autoplay policy.
+                void unlock();
+                dispatch({ type: "START" });
+              }}
               className="mt-5 w-full rounded-sm bg-brass px-4 py-2.5 text-sm font-medium text-stage transition-colors hover:bg-brass-hot focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot"
             >
               Start the game
