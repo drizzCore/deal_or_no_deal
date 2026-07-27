@@ -2,14 +2,17 @@
 
 import { useMemo, useReducer } from "react";
 import { CaseGrid } from "./components/CaseGrid";
+import { GameOver } from "./components/GameOver";
 import { LadderColumn } from "./components/LadderColumn";
 import { OfferPanel } from "./components/OfferPanel";
 import { PlayerCase } from "./components/PlayerCase";
+import { SwapDecision } from "./components/SwapDecision";
 import { ROUND_COUNT, TOP_PRIZE_PRESETS } from "@/lib/config";
 import {
   casesLeftToOpen,
   gameReducer,
   newGame,
+  otherRemainingCase,
   type GameState,
 } from "@/lib/game";
 import { formatPeso } from "@/lib/money";
@@ -58,6 +61,15 @@ export default function Home() {
 
   const playerCase = game.cases.find((c) => c.id === game.playerCaseId);
   const currentOffer = game.offers.at(-1);
+  const otherCase = otherRemainingCase(game);
+
+  const heldCase = game.cases.find((c) => c.id === game.finalCaseId);
+  // After a Deal there is nothing they turned down — only their own Case.
+  const forgoneCase =
+    game.outcome === "deal"
+      ? null
+      : (game.cases.find((c) => !c.opened && c.id !== game.finalCaseId) ??
+        null);
   const mode =
     game.phase === "pickingCase"
       ? "pick"
@@ -150,23 +162,22 @@ export default function Home() {
             />
           )}
 
-          {game.phase === "gameOver" && (
-            <section className="rounded-lg border border-brass-dim bg-stage-lift/80 p-5 text-center">
-              <p className="text-xs tracking-[0.2em] text-brass uppercase">
-                You took the deal
-              </p>
-              <p className="tabular mt-2 font-display text-4xl leading-none text-brass-hot sm:text-5xl">
-                {formatPeso(game.winnings ?? 0)}
-              </p>
-            </section>
+          {game.phase === "swap" && playerCase && otherCase && (
+            <SwapDecision
+              playerCase={playerCase}
+              otherCase={otherCase}
+              onKeep={() => dispatch({ type: "KEEP_CASE" })}
+              onSwap={() => dispatch({ type: "SWAP_CASE" })}
+            />
           )}
 
-          {game.phase === "swap" && (
-            <section className="rounded-lg border border-stage-edge bg-stage-lift/60 p-5 text-center">
-              <p className="text-sm text-bone-dim">
-                You held your nerve to the final two.
-              </p>
-            </section>
+          {game.phase === "gameOver" && heldCase && (
+            <GameOver
+              game={game}
+              heldCase={heldCase}
+              forgoneCase={forgoneCase}
+              onPlayAgain={() => dispatch({ type: "NEW_GAME" })}
+            />
           )}
         </div>
 

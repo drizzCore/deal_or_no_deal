@@ -8,7 +8,7 @@ Taking a Deal at any point also reaches a proper ending — their Player's Case 
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** done
 
 The Swap Decision is its own phase with its own screen and its own decision flow. It is **not** a ninth Round that happens to open zero Cases — the spec is explicit about this and so is the state model.
 
@@ -16,14 +16,14 @@ The round arithmetic that gets you here is load-bearing and silent if broken: ni
 
 Revealing the Player's Case after a Deal was marked optional in the original brief and was explicitly promoted to required — it is the emotional payoff of the format. Without it a Deal just stops.
 
-- [ ] Declining the Round 8 Offer enters a distinct Swap Decision phase
-- [ ] Exactly two Cases are shown, with exactly two possible values made clear
-- [ ] The player can keep their Player's Case or swap for the remaining one
-- [ ] Both values are revealed, with the held Case revealed last
-- [ ] Winnings are stated plainly on a game over screen
-- [ ] Taking a Deal opens the Player's Case afterward and shows whether they beat the Offer
-- [ ] Play again starts a fresh game with a reshuffled board
-- [ ] No animation, Offer, or Case opening can continue running after the game ends
-- [ ] Tests: exactly two Cases are In Play entering the Swap Decision, one of which is the Player's Case
-- [ ] Tests: exactly eighteen Cases are opened across a full eight-Round game
-- [ ] Tests: the Swap Decision is reachable only by declining the Round 8 Offer
+- [x] Declining the Round 8 Offer enters a distinct Swap Decision phase
+- [x] Exactly two Cases are shown, with exactly two possible values made clear
+- [x] The player can keep their Player's Case or swap for the remaining one
+- [x] Both values are revealed, with the held Case revealed last
+- [x] Winnings are stated plainly on a game over screen
+- [x] Taking a Deal opens the Player's Case afterward and shows whether they beat the Offer
+- [x] Play again starts a fresh game with a reshuffled board
+- [x] No animation, Offer, or Case opening can continue running after the game ends
+- [x] Tests: exactly two Cases are In Play entering the Swap Decision, one of which is the Player's Case
+- [x] Tests: exactly eighteen Cases are opened across a full eight-Round game
+- [x] Tests: the Swap Decision is reachable only by declining the Round 8 Offer

@@ -388,6 +388,128 @@ describe("Deal and No Deal", () => {
   });
 });
 
+/** A game with two Cases left, facing the keep-or-swap choice. */
+const atSwapDecision = (seed = 11) =>
+  gameReducer(playDecliningEverything(seed).game, { type: "DECLINE_OFFER" });
+
+const valueOfCase = (state: GameState, caseId: number | null) =>
+  state.cases.find((c) => c.id === caseId)!.value;
+
+describe("reaching the Swap Decision", () => {
+  it("opens exactly eighteen Cases across a full eight-Round game", () => {
+    const swapping = atSwapDecision();
+
+    expect(swapping.cases.filter((c) => c.opened)).toHaveLength(18);
+  });
+
+  it("leaves the Player's Case and exactly one other In Play", () => {
+    const swapping = atSwapDecision();
+    const inPlay = swapping.cases.filter((c) => !c.opened);
+
+    expect(inPlay).toHaveLength(2);
+    expect(inPlay.map((c) => c.id)).toContain(swapping.playerCaseId);
+  });
+
+  it("cannot be reached by declining an earlier Offer", () => {
+    let game = atRoundOne();
+    for (let round = 1; round < 8; round++) {
+      game = gameReducer(finishRound(game), { type: "DECLINE_OFFER" });
+      expect(game.phase).toBe("opening");
+    }
+  });
+
+  it("ignores keep and swap before the final two", () => {
+    const midGame = finishRound(atRoundOne());
+
+    expect(gameReducer(midGame, { type: "KEEP_CASE" })).toEqual(midGame);
+    expect(gameReducer(midGame, { type: "SWAP_CASE" })).toEqual(midGame);
+  });
+});
+
+describe("the Swap Decision", () => {
+  it("pays out the Player's Case when they keep it", () => {
+    const swapping = atSwapDecision();
+    const ended = gameReducer(swapping, { type: "KEEP_CASE" });
+
+    expect(ended.phase).toBe("gameOver");
+    expect(ended.outcome).toBe("kept");
+    expect(ended.finalCaseId).toBe(swapping.playerCaseId);
+    expect(ended.winnings).toBe(valueOfCase(swapping, swapping.playerCaseId));
+  });
+
+  it("pays out the other Case when they swap", () => {
+    const swapping = atSwapDecision();
+    const other = swapping.cases.find(
+      (c) => !c.opened && c.id !== swapping.playerCaseId,
+    )!;
+    const ended = gameReducer(swapping, { type: "SWAP_CASE" });
+
+    expect(ended.outcome).toBe("swapped");
+    expect(ended.finalCaseId).toBe(other.id);
+    expect(ended.winnings).toBe(other.value);
+  });
+
+  it("always pays whatever is in the Case they end up holding", () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const swapping = atSwapDecision(seed);
+      for (const choice of ["KEEP_CASE", "SWAP_CASE"] as const) {
+        const ended = gameReducer(swapping, { type: choice });
+        expect(ended.winnings).toBe(valueOfCase(ended, ended.finalCaseId));
+      }
+    }
+  });
+
+  it("stops everything once the choice is made", () => {
+    const ended = gameReducer(atSwapDecision(), { type: "KEEP_CASE" });
+    const meddled = (
+      [
+        { type: "KEEP_CASE" },
+        { type: "SWAP_CASE" },
+        { type: "DECLINE_OFFER" },
+        { type: "ACCEPT_DEAL" },
+      ] satisfies GameAction[]
+    ).reduce(gameReducer, ended);
+
+    expect(meddled).toEqual(ended);
+  });
+});
+
+describe("the ending after a Deal", () => {
+  it("keeps the Player's Case identified so it can be revealed", () => {
+    const offered = finishRound(atRoundOne());
+    const dealt = gameReducer(offered, { type: "ACCEPT_DEAL" });
+
+    expect(dealt.outcome).toBe("deal");
+    expect(dealt.finalCaseId).toBe(dealt.playerCaseId);
+    expect(dealt.winnings).toBe(offered.offers.at(-1)!.amount);
+  });
+
+  it("never marks the Player's Case as opened", () => {
+    const dealt = gameReducer(finishRound(atRoundOne()), {
+      type: "ACCEPT_DEAL",
+    });
+
+    expect(dealt.cases.find((c) => c.id === dealt.playerCaseId)?.opened).toBe(
+      false,
+    );
+  });
+});
+
+describe("playing again", () => {
+  it("clears the ending and reshuffles the board", () => {
+    const ended = gameReducer(atSwapDecision(), { type: "KEEP_CASE" });
+    const fresh = gameReducer(ended, { type: "NEW_GAME" });
+
+    expect(fresh.phase).toBe("intro");
+    expect(fresh.winnings).toBeNull();
+    expect(fresh.outcome).toBeNull();
+    expect(fresh.playerCaseId).toBeNull();
+    expect(fresh.offers).toHaveLength(0);
+    expect(fresh.cases.every((c) => !c.opened)).toBe(true);
+    expect(valuesOrder(fresh)).not.toEqual(valuesOrder(ended));
+  });
+});
+
 describe("the Prize Ladder at every Top Prize", () => {
   it.each(TOP_PRIZE_PRESETS)(
     "is twenty unique, ascending, clean denominations at ₱%i",

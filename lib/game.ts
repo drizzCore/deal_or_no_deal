@@ -21,6 +21,9 @@ export type Phase =
   | "swap"
   | "gameOver";
 
+/** How a finished game ended. */
+export type Outcome = "deal" | "kept" | "swapped";
+
 /** One Offer the Bank has made. The factor is kept for playtesting. */
 export interface Offer {
   readonly round: number;
@@ -50,6 +53,13 @@ export interface GameState {
   readonly offers: readonly Offer[];
   /** What the player walked away with. Null until the game ends. */
   readonly winnings: number | null;
+  /** How the game ended. Null while it is still running. */
+  readonly outcome: Outcome | null;
+  /**
+   * The Case the player was holding when the game ended. After a Deal this is
+   * still their own Case — it is revealed for closure, not opened.
+   */
+  readonly finalCaseId: number | null;
   /** Advanced by every roll. The whole game is reproducible from its start value. */
   readonly seed: number;
 }
@@ -80,8 +90,15 @@ export function newGame({
     round: 1,
     offers: [],
     winnings: null,
+    outcome: null,
+    finalCaseId: null,
     seed: shuffled.seed,
   };
+}
+
+/** The Case still In Play that the player is not holding. */
+export function otherRemainingCase(state: GameState): Case | undefined {
+  return state.cases.find((c) => !c.opened && c.id !== state.playerCaseId);
 }
 
 /** How many Cases every Round before this one accounted for. */
@@ -119,7 +136,11 @@ export type GameAction =
   /** Deal. Ends the game at the current Offer. */
   | { readonly type: "ACCEPT_DEAL" }
   /** No Deal. Next Round, or the Swap Decision after Round 8. */
-  | { readonly type: "DECLINE_OFFER" };
+  | { readonly type: "DECLINE_OFFER" }
+  /** Hold the Case picked at the start. */
+  | { readonly type: "KEEP_CASE" }
+  /** Trade it for the last Case on the board. */
+  | { readonly type: "SWAP_CASE" };
 
 /**
  * The single seam the game is tested through. Pure: the seed it needs comes
@@ -191,6 +212,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         phase: "gameOver",
+        outcome: "deal",
+        // Their Case is never opened — it is revealed at the ending for closure.
+        finalCaseId: state.playerCaseId,
         winnings: state.offers.at(-1)!.amount,
       };
     }
@@ -200,5 +224,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return state.round >= ROUND_COUNT
         ? { ...state, phase: "swap" }
         : { ...state, phase: "opening", round: state.round + 1 };
+
+    case "KEEP_CASE":
+    case "SWAP_CASE": {
+      if (state.phase !== "swap") return state;
+
+      const held =
+        action.type === "KEEP_CASE"
+          ? state.cases.find((c) => c.id === state.playerCaseId)
+          : otherRemainingCase(state);
+      if (!held) return state;
+
+      return {
+        ...state,
+        phase: "gameOver",
+        outcome: action.type === "KEEP_CASE" ? "kept" : "swapped",
+        finalCaseId: held.id,
+        winnings: held.value,
+      };
+    }
   }
 }
