@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
 Read `spec.md` and ADR 0001 before starting. The Prize Ladder generation approach is a deliberate rejection of the obvious geometric formula and the reasoning is recorded there.
 
@@ -19,15 +19,15 @@ The generator is the fallback for every other Top Prize: pin the bottom four run
 
 The seeded PRNG living in state is the decision that makes the whole test strategy work — see the Testing Decisions section of the spec. Do not call `Math.random()` inside the reducer.
 
-- [ ] Next.js App Router + TypeScript + Tailwind scaffolded, `npm run build` passes
-- [ ] Vitest installed as a devDependency and running
-- [ ] Game state is a single reducer over a discriminated union of phases; the PRNG seed lives in state and the reducer advances it deterministically
-- [ ] A `NEW_GAME` action builds the Prize Ladder, shuffles the twenty values into Cases, and sets the phase to intro
-- [ ] The ₱10,000 Prize Ladder matches the hand-authored values above exactly
-- [ ] The generator produces twenty unique, strictly ascending, clean denominations at ₱50,000, ₱100,000 and ₱1,000,000
-- [ ] Top Prize is a single constant; the four presets are defined in one obvious place
-- [ ] All amounts render with a ₱ symbol, comma separators and no decimals
-- [ ] The Prize Ladder renders as two columns, low values left and high values right
-- [ ] Twenty numbered Cases render in a grid
-- [ ] Tests: the Prize Ladder is always twenty unique ascending clean values, at all four Top Prizes
-- [ ] Tests: the same seed always produces an identical board
+- [x] Next.js App Router + TypeScript + Tailwind scaffolded, `npm run build` passes
+- [x] Vitest installed as a devDependency and running
+- [x] Game state is a single reducer over a discriminated union of phases; the PRNG seed lives in state and the reducer advances it deterministically
+- [x] A `NEW_GAME` action builds the Prize Ladder, shuffles the twenty values into Cases, and sets the phase to intro
+- [x] The ₱10,000 Prize Ladder matches the hand-authored values above exactly
+- [x] The generator produces twenty unique, strictly ascending, clean denominations at ₱50,000, ₱100,000 and ₱1,000,000
+- [x] Top Prize is a single constant; the four presets are defined in one obvious place
+- [x] All amounts render with a ₱ symbol, comma separators and no decimals
+- [x] The Prize Ladder renders as two columns, low values left and high values right
+- [x] Twenty numbered Cases render in a grid
+- [x] Tests: the Prize Ladder is always twenty unique ascending clean values, at all four Top Prizes
+- [x] Tests: the same seed always produces an identical board

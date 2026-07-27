@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  /* Studio dark, with a blue cast — a lit stage, not a black page. */
+  --color-stage: #0b0e14;
+  --color-stage-lift: #151b26;
+  --color-stage-edge: #232c3b;
+
+  /* Case metal. Restrained brass, not a bright gold. */
+  --color-brass: #c9a227;
+  --color-brass-hot: #f2d06b;
+  --color-brass-dim: #6b5a1f;
+
+  /* Warm off-white — white glares against the stage. */
+  --color-bone: #ede8dc;
+  --color-bone-dim: #9aa1ae;
+  --color-bone-faint: #5b6474;
+
+  --font-display: var(--font-anton);
+  --font-sans: var(--font-archivo);
+}
+
+html {
+  background: var(--color-stage);
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-stage);
+  color: var(--color-bone);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Money and case numbers align in columns; they must not wobble. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/*
+ * The stage wash. A hard key light from above-centre falling off into the
+ * corners — this is the surface ticket 07's moving spotlight will ride on.
+ */
+.stage-wash {
+  background:
+    radial-gradient(
+      120% 80% at 50% -10%,
+      rgba(201, 162, 39, 0.11) 0%,
+      rgba(201, 162, 39, 0.03) 32%,
+      transparent 62%
+    ),
+    radial-gradient(
+      90% 70% at 50% 45%,
+      rgba(46, 111, 168, 0.09) 0%,
+      transparent 70%
+    );
+}
+
+/*
+ * A sealed Case. Brushed metal catching the key light: a bright top rim, a
+ * darker body, and a lifted edge. Ticket 07 rotates the lid off this.
+ */
+.case-tile {
+  background:
+    linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(255, 255, 255, 0.03) 22%,
+      rgba(0, 0, 0, 0.22) 68%,
+      rgba(0, 0, 0, 0.4) 100%
+    ),
+    linear-gradient(180deg, #2b3444 0%, #1b2230 55%, #131924 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    0 10px 22px -12px rgba(0, 0, 0, 0.9);
+}
+
+.case-tile::after {
+  /* The seam where the lid meets the body. */
+  content: "";
+  position: absolute;
+  inset-inline: 12%;
+  top: 34%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(242, 208, 107, 0.28),
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
