@@ -411,26 +411,52 @@ body {
  * darkening. The lid still moves — the sequence has to stay legible — but it
  * gets there at once.
  */
+/*
+ * Two routes to the same result, because neither alone is enough: the media
+ * query cannot know the player overrode it in settings, and the attribute is
+ * not set until React hydrates. `:not([data-motion="full"])` is what lets a
+ * player opt back into motion against their OS setting.
+ *
+ * The Round announcement is deliberately NOT suppressed here — its animation
+ * ending is what unlocks the board. At 0.01ms it fires immediately, which is
+ * exactly the behaviour reduced motion should give.
+ */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  html:not([data-motion="full"]) *,
+  html:not([data-motion="full"]) *::before,
+  html:not([data-motion="full"]) *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 
-  .case-3d.is-arming {
+  html:not([data-motion="full"]) .case-3d.is-arming,
+  html:not([data-motion="full"]) .shake-a,
+  html:not([data-motion="full"]) .shake-b {
     animation: none;
   }
 
-  .spotlight,
-  .reveal-fx {
+  html:not([data-motion="full"]) .spotlight,
+  html:not([data-motion="full"]) .reveal-fx {
     display: none;
   }
+}
 
-  .shake-a,
-  .shake-b {
-    animation: none;
-  }
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+html[data-motion="reduced"] .case-3d.is-arming,
+html[data-motion="reduced"] .shake-a,
+html[data-motion="reduced"] .shake-b {
+  animation: none;
+}
+
+html[data-motion="reduced"] .spotlight,
+html[data-motion="reduced"] .reveal-fx {
+  display: none;
 }

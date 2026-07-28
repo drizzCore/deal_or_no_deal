@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useReducer, useState } from "react";
 import { useCaseOpening } from "./hooks/useCaseOpening";
 import { useGameAudio } from "./hooks/useGameAudio";
-import { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion";
 import { CaseGrid } from "./components/CaseGrid";
 import { GameOver } from "./components/GameOver";
 import { LadderColumn } from "./components/LadderColumn";
@@ -12,15 +11,15 @@ import { OfferPanel } from "./components/OfferPanel";
 import { PlayerCase } from "./components/PlayerCase";
 import { RevealEffects } from "./components/RevealEffects";
 import { RoundIntro } from "./components/RoundIntro";
-import { SoundControl } from "./components/SoundControl";
+import { SettingsPanel } from "./components/SettingsPanel";
+import { useSettings } from "./hooks/useSettings";
 import { SwapDecision } from "./components/SwapDecision";
 import {
   beatDurationMs,
   CASES_PER_ROUND,
+  REVEAL_SPEEDS,
   ROUND_COUNT,
   TIMING,
-  TOP_PRIZE_PRESETS,
-  type RevealSpeed,
 } from "@/lib/config";
 import {
   bestRefusedOffer,
@@ -65,12 +64,14 @@ export default function Home() {
     newGame,
   );
 
-  const [muted, setMuted] = useState(false);
-  const [volume, setVolume] = useState(0.7);
-  const audioSettings = useMemo(() => ({ muted, volume }), [muted, volume]);
-  const { unlock, play, stop } = useGameAudio(game, audioSettings);
+  const { settings, update, reducedMotion } = useSettings();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const reducedMotion = usePrefersReducedMotion();
+  const audioSettings = useMemo(
+    () => ({ muted: settings.muted, volume: settings.volume }),
+    [settings.muted, settings.volume],
+  );
+  const { unlock, play, stop } = useGameAudio(game, audioSettings);
 
   const armTension = useCallback(() => play("tension"), [play]);
   const disarmTension = useCallback(() => stop("tension"), [stop]);
@@ -85,8 +86,8 @@ export default function Home() {
     onDisarm: disarmTension,
   });
 
-  // Ticket 09 puts this on a settings control.
-  const revealSpeed: RevealSpeed = "normal";
+  const revealSpeed = settings.revealSpeed;
+  const speedScale = REVEAL_SPEEDS[revealSpeed];
 
   const lastBeatMs = game.lastReveal
     ? beatDurationMs({
@@ -182,8 +183,8 @@ export default function Home() {
       className={`stage-wash relative flex flex-1 flex-col items-center px-4 pt-6 pb-12 sm:px-6 ${shakeClass}`}
       style={
         {
-          "--lid-ms": `${TIMING.lidOpenMs}ms`,
-          "--spot-ms": `${TIMING.spotlightMs}ms`,
+          "--lid-ms": `${Math.round(TIMING.lidOpenMs * speedScale)}ms`,
+          "--spot-ms": `${Math.round(TIMING.spotlightMs * speedScale)}ms`,
         } as React.CSSProperties
       }
     >
@@ -195,41 +196,31 @@ export default function Home() {
           <p className="mt-1.5 text-sm text-bone-dim">{statusFor(game)}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <SoundControl
-            muted={muted}
-            volume={volume}
-            onMutedChange={setMuted}
-            onVolumeChange={setVolume}
-          />
-          <span className="mr-1 text-xs tracking-wide text-bone-faint uppercase">
-            Top prize
+        <div className="flex items-center gap-3">
+          <span className="tabular text-xs text-bone-faint">
+            Playing for {formatPeso(game.topPrize)}
           </span>
-          {TOP_PRIZE_PRESETS.map((prize) => {
-            const active = prize === game.topPrize;
-            return (
-              <button
-                key={prize}
-                type="button"
-                onClick={() => startFreshGame(prize)}
-                className={[
-                  "tabular rounded-sm px-2.5 py-1.5 text-xs transition-colors",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot",
-                  active
-                    ? "bg-brass text-stage"
-                    : "bg-stage-lift text-bone-dim hover:bg-stage-edge hover:text-bone",
-                ].join(" ")}
-              >
-                {formatPeso(prize)}
-              </button>
-            );
-          })}
           <button
             type="button"
-            onClick={() => startFreshGame()}
-            className="rounded-sm border border-stage-edge px-2.5 py-1.5 text-xs text-bone-dim transition-colors hover:border-brass-dim hover:text-bone focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot"
+            onClick={() => {
+              play("uiClick");
+              setSettingsOpen(true);
+            }}
+            aria-label="Settings"
+            className="flex items-center gap-1.5 rounded-sm border border-stage-edge px-2.5 py-1.5 text-xs text-bone-dim transition-colors hover:border-brass-dim hover:text-bone focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-hot"
           >
-            New game
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            Settings
           </button>
         </div>
       </header>
@@ -339,8 +330,26 @@ export default function Home() {
         key={game.round}
         round={game.round}
         casesToOpen={CASES_PER_ROUND[game.round - 1]}
-        durationMs={TIMING.roundIntroMs}
+        durationMs={Math.round(TIMING.roundIntroMs * speedScale)}
         onFinished={announceRoundDone}
+      />
+    )}
+
+    {settingsOpen && (
+      <SettingsPanel
+        settings={settings}
+        topPrize={game.topPrize}
+        // Only prompt when there is real progress to lose.
+        gameInProgress={
+          game.playerCaseId !== null && game.phase !== "gameOver"
+        }
+        onChange={update}
+        onTopPrize={(prize: number) => {
+          startFreshGame(prize);
+          setSettingsOpen(false);
+        }}
+        onNewGame={() => startFreshGame()}
+        onClose={() => setSettingsOpen(false)}
       />
     )}
     </>
