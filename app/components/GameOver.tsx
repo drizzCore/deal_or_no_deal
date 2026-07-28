@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
 import type { Case, GameState } from "@/lib/game";
 import { formatPeso } from "@/lib/money";
 
@@ -12,6 +11,11 @@ interface GameOverProps {
   readonly heldCase: Case;
   /** The Case they turned down. Only exists after a Swap Decision. */
   readonly forgoneCase: Case | null;
+  /**
+   * Passed in rather than read from the media query here, so the settings
+   * override is honoured — the OS preference is not the final word.
+   */
+  readonly reducedMotion: boolean;
   readonly onPlayAgain: () => void;
 }
 
@@ -19,9 +23,9 @@ export function GameOver({
   game,
   heldCase,
   forgoneCase,
+  reducedMotion,
   onPlayAgain,
 }: GameOverProps) {
-  const reducedMotion = usePrefersReducedMotion();
   const [tick, setTick] = useState(0);
 
   // The held Case is revealed last — it is the only beat of suspense left.

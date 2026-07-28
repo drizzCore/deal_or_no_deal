@@ -170,13 +170,6 @@ export default function Home() {
     );
   };
 
-  const ladders = (
-    <>
-      <LadderColumn values={lowRungs} eliminated={eliminated} />
-      <LadderColumn values={highRungs} eliminated={eliminated} align="right" />
-    </>
-  );
-
   return (
     <>
     <main
@@ -225,11 +218,29 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="mt-6 grid w-full max-w-5xl gap-5 lg:grid-cols-[auto_1fr_auto] lg:gap-8">
-        {/* On phones the ladder sits above the board. Ticket 10 pins it to the
-            viewport properly; this is the honest interim layout. */}
-        <div className="grid grid-cols-2 gap-x-4 lg:hidden">{ladders}</div>
+      {/*
+        On a phone the ladder is pinned and the board scrolls under it. It is
+        the one thing that must never leave the screen: a Case opening means
+        nothing if the player cannot see what it cost them. The status line
+        rides along, because "open 2 more cases" is the other thing worth
+        keeping in view.
+      */}
+      <div className="sticky top-0 z-20 -mx-4 w-screen border-b border-stage-edge bg-stage/95 px-4 pt-2 pb-2 backdrop-blur-sm lg:hidden">
+        <p className="mb-1.5 text-[11px] leading-none text-bone-dim">
+          {statusFor(game)}
+        </p>
+        <div className="grid grid-cols-2 gap-x-3">
+          <LadderColumn values={lowRungs} eliminated={eliminated} compact />
+          <LadderColumn
+            values={highRungs}
+            eliminated={eliminated}
+            align="right"
+            compact
+          />
+        </div>
+      </div>
 
+      <div className="mt-4 grid w-full max-w-5xl gap-5 lg:mt-6 lg:grid-cols-[auto_1fr_auto] lg:gap-8">
         <div className="hidden lg:block">
           <LadderColumn values={lowRungs} eliminated={eliminated} />
         </div>
@@ -274,6 +285,7 @@ export default function Home() {
               game={game}
               heldCase={heldCase}
               forgoneCase={forgoneCase}
+              reducedMotion={reducedMotion}
               onPlayAgain={() => startFreshGame()}
             />
           )}
