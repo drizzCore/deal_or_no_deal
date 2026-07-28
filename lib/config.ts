@@ -82,6 +82,17 @@ export const TIMING = {
   roundIntroMs: 1700,
 } as const;
 
+/**
+ * How hard the ambient tone reacts to the board.
+ *
+ * Raw board tone rarely leaves ±0.35 in an ordinary game, which is invisible
+ * once multiplied by the layer's own low alpha. This gain lifts mid-game
+ * differences into view without letting the effect become a readout — raise it
+ * if the room never seems to change, lower it if a player can tell what the
+ * colour is telling them.
+ */
+export const AMBIENT_TONE_GAIN = 2.2;
+
 /** How many Cases at each end of the remaining pool get the pinned treatment. */
 export const TIER_EDGE_SIZE = 3;
 

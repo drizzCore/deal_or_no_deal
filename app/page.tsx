@@ -15,6 +15,7 @@ import { SettingsPanel } from "./components/SettingsPanel";
 import { useSettings } from "./hooks/useSettings";
 import { SwapDecision } from "./components/SwapDecision";
 import {
+  AMBIENT_TONE_GAIN,
   beatDurationMs,
   CASES_PER_ROUND,
   REVEAL_SPEEDS,
@@ -23,6 +24,7 @@ import {
 } from "@/lib/config";
 import {
   bestRefusedOffer,
+  boardTone,
   casesLeftToOpen,
   gameReducer,
   newGame,
@@ -137,6 +139,13 @@ export default function Home() {
   const lowRungs = game.ladder.slice(0, half);
   const highRungs = game.ladder.slice(half);
 
+  // Gain is a presentation choice, applied here so boardTone stays an honest
+  // measure of the board rather than something tuned for how it looks.
+  const tone = Math.max(
+    -1,
+    Math.min(1, boardTone(game) * AMBIENT_TONE_GAIN),
+  );
+
   const playerCase = game.cases.find((c) => c.id === game.playerCaseId);
   const currentOffer = game.offers.at(-1);
   const otherCase = otherRemainingCase(game);
@@ -178,6 +187,10 @@ export default function Home() {
         {
           "--lid-ms": `${Math.round(TIMING.lidOpenMs * speedScale)}ms`,
           "--spot-ms": `${Math.round(TIMING.spotlightMs * speedScale)}ms`,
+          // Ambient tone. Never labelled, never explained — the room just
+          // changes with the board.
+          "--warm": Math.max(0, tone).toFixed(3),
+          "--cool": Math.max(0, -tone).toFixed(3),
         } as React.CSSProperties
       }
     >

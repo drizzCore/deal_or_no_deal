@@ -161,6 +161,28 @@ export function tierFor(state: GameState, caseId: number): Tier {
   return "medium";
 }
 
+/**
+ * How the board is trending, from -1 (only big values left) to +1 (only small).
+ * Zero on a full board.
+ *
+ * Ranked rather than averaged: the Prize Ladder is geometric, so a mean of the
+ * values themselves is dominated by the Top Prize and would read as "cool"
+ * right up until the moment that one Case is opened. Rank treats losing ₱10,000
+ * and losing ₱1 as equal and opposite, which is what the atmosphere should
+ * follow.
+ */
+export function boardTone(state: GameState): number {
+  const rankOf = new Map(state.ladder.map((value, index) => [value, index]));
+  const inPlay = state.cases.filter((c) => !c.opened);
+  if (inPlay.length === 0 || state.ladder.length < 2) return 0;
+
+  const meanRank =
+    inPlay.reduce((sum, c) => sum + (rankOf.get(c.value) ?? 0), 0) /
+    inPlay.length;
+
+  return (0.5 - meanRank / (state.ladder.length - 1)) * 2;
+}
+
 /** The Case still In Play that the player is not holding. */
 export function otherRemainingCase(state: GameState): Case | undefined {
   return state.cases.find((c) => !c.opened && c.id !== state.playerCaseId);

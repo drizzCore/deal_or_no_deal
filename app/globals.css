@@ -63,6 +63,45 @@ body {
 }
 
 /*
+ * Ambient tone. Two layers crossfading on opacity — cheap on the compositor,
+ * and far slower than anything else on screen so it reads as the room changing
+ * rather than as a readout. Nothing labels it and nothing should.
+ *
+ * z-index -1 puts them above the stage wash and below every bit of content.
+ */
+.stage-wash::before,
+.stage-wash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 2600ms ease-in-out;
+}
+
+/* Mostly big values left: the room cools. */
+.stage-wash::before {
+  background: radial-gradient(
+    110% 75% at 50% 35%,
+    rgba(46, 111, 168, 0.22) 0%,
+    rgba(46, 111, 168, 0.07) 45%,
+    transparent 74%
+  );
+  opacity: var(--cool, 0);
+}
+
+/* Trending low: it warms and closes in. */
+.stage-wash::after {
+  background: radial-gradient(
+    110% 75% at 50% 35%,
+    rgba(179, 69, 58, 0.2) 0%,
+    rgba(201, 120, 39, 0.07) 45%,
+    transparent 74%
+  );
+  opacity: var(--warm, 0);
+}
+
+/*
  * A Case is a lid over a body. The lid is brushed metal catching the key
  * light; the body is the dark interior holding the value. Opening rotates the
  * lid away on its top edge rather than swapping the face.
@@ -440,6 +479,13 @@ body {
   html:not([data-motion="full"]) .reveal-fx {
     display: none;
   }
+
+  /* Without its long transition the ambient tone would snap on every opening,
+     which is worse than not having it. */
+  html:not([data-motion="full"]) .stage-wash::before,
+  html:not([data-motion="full"]) .stage-wash::after {
+    opacity: 0 !important;
+  }
 }
 
 html[data-motion="reduced"] *,
@@ -459,4 +505,9 @@ html[data-motion="reduced"] .shake-b {
 html[data-motion="reduced"] .spotlight,
 html[data-motion="reduced"] .reveal-fx {
   display: none;
+}
+
+html[data-motion="reduced"] .stage-wash::before,
+html[data-motion="reduced"] .stage-wash::after {
+  opacity: 0 !important;
 }

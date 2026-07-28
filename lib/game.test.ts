@@ -7,6 +7,7 @@ import {
 } from "./config";
 import {
   bestRefusedOffer,
+  boardTone,
   gameReducer,
   newGame,
   type GameAction,
@@ -529,6 +530,77 @@ describe("Tier classification", () => {
     });
 
     expect(gameReducer(played, { type: "NEW_GAME" }).lastReveal).toBeNull();
+  });
+});
+
+describe("how the board is trending", () => {
+  it("is neutral on a full board", () => {
+    expect(boardTone(newGame({ seed: 1 }))).toBeCloseTo(0, 5);
+  });
+
+  it("runs cold when only the big values are left", () => {
+    const game = atRoundOne(1);
+    const doomed = [...game.cases]
+      .sort((a, b) => a.value - b.value)
+      .filter((c) => c.id !== game.playerCaseId)
+      .slice(0, 15);
+    const stripped = doomed.reduce(
+      (state, c) => ({
+        ...state,
+        cases: state.cases.map((x) =>
+          x.id === c.id ? { ...x, opened: true } : x,
+        ),
+      }),
+      game,
+    );
+
+    expect(boardTone(stripped)).toBeLessThan(-0.5);
+  });
+
+  it("runs hot when only the small values are left", () => {
+    const game = atRoundOne(1);
+    const doomed = [...game.cases]
+      .sort((a, b) => b.value - a.value)
+      .filter((c) => c.id !== game.playerCaseId)
+      .slice(0, 15);
+    const stripped = doomed.reduce(
+      (state, c) => ({
+        ...state,
+        cases: state.cases.map((x) =>
+          x.id === c.id ? { ...x, opened: true } : x,
+        ),
+      }),
+      game,
+    );
+
+    expect(boardTone(stripped)).toBeGreaterThan(0.5);
+  });
+
+  it("stays inside -1 and 1 through whole games", () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      let game = atRoundOne(seed);
+      while (game.phase === "opening" || game.phase === "offer") {
+        expect(Math.abs(boardTone(game))).toBeLessThanOrEqual(1);
+        if (game.phase === "offer") {
+          if (game.round >= 8) break;
+          game = gameReducer(game, { type: "DECLINE_OFFER" });
+          continue;
+        }
+        game = gameReducer(game, {
+          type: "OPEN_CASE",
+          caseId: openable(game)[0].id,
+        });
+      }
+    }
+  });
+
+  it("returns to neutral on a new game", () => {
+    const played = finishRound(atRoundOne(3));
+
+    expect(boardTone(gameReducer(played, { type: "NEW_GAME" }))).toBeCloseTo(
+      0,
+      5,
+    );
   });
 });
 
