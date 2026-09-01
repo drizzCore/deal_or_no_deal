@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { pickPlayerCase, playRoundToOffer, readBoard, startGame } from "./board";
+import { DEFAULT_TOP_PRIZE } from "../lib/config";
 
 const openSettings = async (page: Page) => {
   await page.getByRole("button", { name: "Settings" }).click();
@@ -27,7 +28,7 @@ test.describe("settings", () => {
     await startGame(page);
 
     const before = await readBoard(page);
-    expect(before.ladder[19]).toBe(10000);
+    expect(before.ladder[19]).toBe(DEFAULT_TOP_PRIZE);
 
     await openSettings(page);
     const dialog = page.getByRole("dialog", { name: "Settings" });
@@ -66,7 +67,7 @@ test.describe("settings", () => {
 
     const kept = await readBoard(page);
     expect(kept.phase).toBe("offer");
-    expect(kept.topPrize).toBe(10000);
+    expect(kept.topPrize).toBe(DEFAULT_TOP_PRIZE);
     expect(kept.opened).toHaveLength(5);
 
     // Confirming starts over on the new ladder.
@@ -143,8 +144,8 @@ test.describe("settings", () => {
     const fresh = await readBoard(page);
     expect(fresh.phase).toBe("intro");
 
-    // The ready card has to be cleared before the header is reachable again -
-    // see the known issue below.
+    // A new game rewinds to the ready card, so clear it before reading the
+    // panel back.
     await startGame(page);
 
     await openSettings(page);

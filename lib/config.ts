@@ -158,7 +158,13 @@ export function beatDurationMs({
 }
 
 /** Top Prize presets offered in settings. */
-export const TOP_PRIZE_PRESETS = [10_000, 50_000, 100_000, 1_000_000] as const;
+export const TOP_PRIZE_PRESETS = [
+  3_000,
+  10_000,
+  50_000,
+  100_000,
+  1_000_000,
+] as const;
 
 export const DEFAULT_TOP_PRIZE: number = TOP_PRIZE_PRESETS[0];
 
@@ -172,10 +178,22 @@ export const LOW_ANCHORS = [1, 5, 10, 50] as const;
  * Hand-authored Prize Ladders, used verbatim when present.
  *
  * The ₱10,000 board is hand-authored because the generator prefers ₱150/₱250
- * over the more satisfying ₱100/₱700 at that Top Prize. Every other Top Prize
- * falls through to the generator.
+ * over the more satisfying ₱100/₱700 at that Top Prize.
+ *
+ * The ₱3,000 board is hand-authored because the generator *cannot* build one:
+ * only thirteen clean denominations exist between ₱50 and ₱3,000 and fifteen
+ * rungs are needed, so `buildLadder` throws. Below roughly ₱5,000 every board
+ * has to be authored by hand. It carries a ₱25 rung, which the LOW_ANCHORS
+ * convention would not produce — the televised board has one, and at this Top
+ * Prize the bottom needs the extra step to stay interesting.
+ *
+ * Every other Top Prize falls through to the generator.
  */
 export const LADDER_OVERRIDES: Readonly<Record<number, readonly number[]>> = {
+  3_000: [
+    1, 5, 10, 25, 50, 75, 100, 150, 200, 250, 300, 400, 500, 700, 900, 1200,
+    1500, 2000, 2500, 3000,
+  ],
   10_000: [
     1, 5, 10, 50, 100, 150, 200, 300, 400, 500, 700, 1000, 1500, 2000, 2500,
     3000, 4000, 5000, 7000, 10000,

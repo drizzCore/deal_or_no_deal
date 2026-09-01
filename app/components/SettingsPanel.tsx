@@ -81,15 +81,26 @@ export function SettingsPanel({
 
         <div className="flex flex-col gap-6 px-5 py-5">
           <Section label="Top prize">
+            {/* An odd number of presets would leave the last one stranded in
+                half a row, so it takes the whole width instead. */}
             <div className="grid grid-cols-2 gap-2">
-              {TOP_PRIZE_PRESETS.map((prize) => (
-                <Choice
+              {TOP_PRIZE_PRESETS.map((prize, index) => (
+                <div
                   key={prize}
-                  active={prize === topPrize}
-                  onClick={() => chooseTopPrize(prize)}
+                  className={
+                    index === TOP_PRIZE_PRESETS.length - 1 &&
+                    TOP_PRIZE_PRESETS.length % 2 === 1
+                      ? "col-span-2 flex"
+                      : "flex"
+                  }
                 >
-                  {formatPeso(prize)}
-                </Choice>
+                  <Choice
+                    active={prize === topPrize}
+                    onClick={() => chooseTopPrize(prize)}
+                  >
+                    {formatPeso(prize)}
+                  </Choice>
+                </div>
               ))}
             </div>
 
