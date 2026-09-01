@@ -10,8 +10,15 @@ import { defineConfig, devices } from "@playwright/test";
  * turns an eighteen-opening playthrough from ~40s of waiting into ~3s. Tests
  * that are *about* the animations opt back into full motion themselves.
  */
+/**
+ * `localhost`, never `127.0.0.1`. Next's dev server rejects the HMR WebSocket
+ * handshake for an origin it does not recognise, and in Next 16 the page then
+ * never hydrates at all — the markup renders and no button does anything.
+ * A production build is unaffected, but the two agree on `localhost`, so the
+ * suite uses the hostname that works against either.
+ */
 const PORT = Number(process.env.PLAYWRIGHT_PORT ?? 3100);
-const baseURL = `http://127.0.0.1:${PORT}`;
+const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -41,13 +48,12 @@ export default defineConfig({
     },
   ],
   /**
-   * A production build, not `next dev`.
+   * Tests run against a production build — what a player actually loads,
+   * without dev-only overlays or warnings in the way.
    *
-   * Under `next dev` the Turbopack HMR client cannot open its WebSocket in
-   * this environment (`ERR_INVALID_HTTP_RESPONSE` on the handshake) and the
-   * page never hydrates — the markup renders, but no button does anything. A
-   * built server has no HMR socket, hydrates reliably, and is closer to what a
-   * player actually loads.
+   * `reuseExistingServer` means a `next dev` already listening on this port is
+   * used as-is, so you can leave the dev server up and skip the rebuild while
+   * iterating. Both work; only the build is guaranteed here.
    */
   webServer: {
     command: `npm run build && npx next start -p ${PORT}`,

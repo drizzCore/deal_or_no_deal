@@ -194,7 +194,13 @@ export default function Home() {
         } as React.CSSProperties
       }
     >
-      <header className="flex w-full max-w-5xl flex-col gap-3 border-b border-stage-edge pb-4 sm:flex-row sm:items-end sm:justify-between">
+      {/*
+        Lifted above the ready card's overlay (z-10). Without this the header
+        is buried under it, and Settings — where the Top Prize lives — cannot
+        be reached until a game has started, which is exactly the wrong way
+        round: the prize is the one thing you want to set before you begin.
+      */}
+      <header className="relative z-20 flex w-full max-w-5xl flex-col gap-3 border-b border-stage-edge pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-3xl leading-none tracking-wide text-bone sm:text-4xl">
             DEAL OR NO DEAL

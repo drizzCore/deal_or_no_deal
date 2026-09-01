@@ -155,25 +155,28 @@ test.describe("settings", () => {
   });
 
   /**
-   * KNOWN ISSUE - this test is expected to fail.
-   *
-   * The ready card is `fixed inset-0 z-10` and the header is in normal flow
-   * beneath it, so the Settings button cannot be clicked while the card is up.
-   * That is every cold load, and again after every new game or Play again.
-   * Top Prize is precisely the setting a player wants *before* starting, and
-   * the only way to reach it is to start a game, change it, and be thrown back
-   * to the card. Delete the `test.fail` when the header is lifted above the
-   * overlay.
+   * The ready card is a full-screen overlay; the header has to sit above it.
+   * Top Prize is the one setting a player wants before starting, and this is
+   * the only moment they can set it without throwing a game away.
    */
-  test("settings can be opened from the ready card", async ({ page }) => {
-    test.fail(true, "the ready card overlay covers the header");
-
+  test("the top prize can be set from the ready card", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "READY?" })).toBeVisible();
 
-    await page
-      .getByRole("button", { name: "Settings" })
-      .click({ timeout: 3_000 });
-    await expect(page.getByRole("dialog", { name: "Settings" })).toBeVisible();
+    await openSettings(page);
+    const dialog = page.getByRole("dialog", { name: "Settings" });
+    await dialog.getByRole("button", { name: "100,000" }).click();
+
+    // Nothing to lose before the game begins, so no prompt and no detour.
+    await expect(page.getByText("starts a new game")).toHaveCount(0);
+
+    const board = await readBoard(page);
+    expect(board.phase).toBe("intro");
+    expect(board.topPrize).toBe(100000);
+
+    // And the game they start is the one they just chose.
+    await startGame(page);
+    const playing = await readBoard(page);
+    expect(playing.ladder[19]).toBe(100000);
   });
 });
