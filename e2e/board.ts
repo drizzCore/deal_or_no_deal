@@ -129,6 +129,9 @@ export async function readBoard(page: Page): Promise<Board> {
     const refused = /Best offer you turned down: (.+?) in round (\d+)/.exec(body);
     const prize = /Playing for ([^A-Za-z]+)/.exec(body);
 
+    // The status line is the authority on the phase, not the Offer panel —
+    // during the Bank's call the game is already in the offer phase but the
+    // panel is deliberately still off screen.
     const phase = buttons.includes("Start the game")
       ? "intro"
       : offerSection
@@ -139,9 +142,11 @@ export async function readBoard(page: Page): Promise<Board> {
             ? "gameOver"
             : status.startsWith("Pick the case")
               ? "pick"
-              : status.startsWith("Round")
-                ? "opening"
-                : "unknown";
+              : status.includes("bank is calling")
+                ? "offer"
+                : status.startsWith("Round")
+                  ? "opening"
+                  : "unknown";
 
     return {
       phase,
@@ -226,16 +231,36 @@ export async function openCase(page: Page, id: number): Promise<void> {
   );
 }
 
-/** Opens Cases until the Bank calls. Returns the board at the Offer. */
+/**
+ * Opens Cases until the Bank has named its price. Returns the board with the
+ * Offer on the table — never mid-call, so callers can read `offer` directly.
+ */
 export async function playRoundToOffer(page: Page): Promise<Board> {
   for (let guard = 0; guard < 25; guard++) {
     const board = await readBoard(page);
-    if (board.phase === "offer") return board;
+
+    if (board.phase === "offer") {
+      if (board.offer !== null) return board;
+      // The Bank is still calling. Nothing is openable and the amount is not
+      // on screen yet, so wait it out rather than clicking into a locked board.
+      await waitForOfferPanel(page);
+      continue;
+    }
+
     const next = board.sealedIds.find((id) => id !== board.playerCaseId);
     if (next === undefined) break;
     await openCase(page, next);
   }
   throw new Error("Round never reached an Offer");
+}
+
+/** Waits for the Bank's call to finish and the amount to appear. */
+export async function waitForOfferPanel(page: Page): Promise<void> {
+  await page
+    .locator("section")
+    .filter({ hasText: "The bank offers" })
+    .first()
+    .waitFor({ state: "visible", timeout: 30_000 });
 }
 
 export async function declineOffer(page: Page): Promise<void> {

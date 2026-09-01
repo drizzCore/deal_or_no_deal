@@ -58,9 +58,11 @@ export function useGameAudio(game: GameState, settings: AudioSettings) {
       if (reveal.tier === "low") sound.play("lowReveal");
     }
 
-    if (before.phase !== "offer" && game.phase === "offer") {
-      sound.play("offerArrives");
-    }
+    // No cue on entering the offer phase. The Bank's call runs for a couple of
+    // seconds before the amount is on screen, and `offerArrives` is the sting
+    // for the amount landing — firing it here would spend it on an empty
+    // screen. The call's own beats own that audio, the same way the
+    // case-opening beat owns the tension bed.
 
     if (before.phase === "offer" && game.phase === "opening") {
       sound.play("noDeal");

@@ -398,6 +398,136 @@ body {
     forwards;
 }
 
+/*
+ * The Bank's call. Same contract as the Round announcement: the card's own
+ * animation ending is what reveals the Offer, so it must always run — reduced
+ * motion shortens it to nothing rather than removing it.
+ *
+ * The two beats are stacked in one grid cell so the second does not shift the
+ * first as it arrives, and they hand over at 54% of the run.
+ */
+.banker-call-layer {
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(11, 14, 20, 0.94) 0%,
+    rgba(11, 14, 20, 0.8) 55%,
+    rgba(11, 14, 20, 0.5) 100%
+  );
+  animation: banker-call-wash var(--call-ms, 2600ms) ease-out forwards;
+}
+
+@keyframes banker-call-wash {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Carries the signal animation. The scale is small on purpose — this element
+   exists to time the sequence, not to be noticed. */
+.banker-call {
+  display: grid;
+  animation: banker-call-card var(--call-ms, 2600ms) ease-out forwards;
+}
+
+@keyframes banker-call-card {
+  0% {
+    transform: scale(0.985);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.banker-call-beat {
+  grid-area: 1 / 1;
+  opacity: 0;
+}
+
+.banker-call-ring {
+  animation: banker-beat-ring var(--call-ms, 2600ms) ease-out forwards;
+}
+
+@keyframes banker-beat-ring {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  9% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  44% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  54% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.banker-call-says {
+  animation: banker-beat-says var(--call-ms, 2600ms) ease-out forwards;
+}
+
+@keyframes banker-beat-says {
+  0%,
+  54% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  64% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  92% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* The ringing light next to the first beat. */
+.banker-call-dot {
+  display: inline-block;
+  width: 0.5em;
+  height: 0.5em;
+  margin-right: 0.45em;
+  vertical-align: middle;
+  border-radius: 9999px;
+  background: var(--color-brass-hot);
+  animation: banker-call-ringing 620ms ease-in-out infinite;
+}
+
+@keyframes banker-call-ringing {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes round-intro {
   0% {
     opacity: 0;

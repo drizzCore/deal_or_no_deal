@@ -80,6 +80,13 @@ export const TIMING = {
   reducedMotionBeatMs: 150,
   /** The card announcing a Round, before any Case can be picked. */
   roundIntroMs: 1700,
+  /**
+   * The Bank's call, before the Offer is on screen. Two beats inside one run:
+   * roughly 54% of it is "the banker is calling", the rest is "the banker's
+   * offer is". Deliberately not skippable — the wait is the point — so keep an
+   * eye on the total: it is spent eight times a game.
+   */
+  bankerCallMs: 2600,
 } as const;
 
 /**

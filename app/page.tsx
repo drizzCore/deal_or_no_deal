@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useCaseOpening } from "./hooks/useCaseOpening";
 import { useGameAudio } from "./hooks/useGameAudio";
+import { BankerCall } from "./components/BankerCall";
 import { CaseGrid } from "./components/CaseGrid";
 import { GameOver } from "./components/GameOver";
 import { LadderColumn } from "./components/LadderColumn";
@@ -122,10 +123,35 @@ export default function Home() {
     [game.round],
   );
 
+  // The Bank's call, tracked the same way: which Round's Offer the player has
+  // already had announced. The Offer panel stays off screen until it lands, so
+  // the amount cannot be read before the beat is over.
+  const [offerAnnounced, setOfferAnnounced] = useState<number | null>(null);
+  const announcingOffer =
+    game.phase === "offer" && offerAnnounced !== game.round;
+
+  const announceOfferDone = useCallback(() => {
+    play("offerArrives");
+    setOfferAnnounced(game.round);
+  }, [game.round, play]);
+
+  const bankerCallMs = reducedMotion
+    ? TIMING.reducedMotionBeatMs
+    : Math.round(TIMING.bankerCallMs * speedScale);
+
+  // The call rides the same rising bed as a Case opening: in when the phone
+  // rings, out when the amount lands.
+  useEffect(() => {
+    if (!announcingOffer) return;
+    play("tension");
+    return () => stop("tension");
+  }, [announcingOffer, play, stop]);
+
   const startFreshGame = (topPrize?: number) => {
     cancel();
     play("uiClick");
     setRoundAnnounced(null);
+    setOfferAnnounced(null);
     dispatch({ type: "NEW_GAME", ...(topPrize ? { topPrize } : {}) });
   };
 
@@ -275,7 +301,7 @@ export default function Home() {
 
           {playerCase && <PlayerCase briefcase={playerCase} />}
 
-          {game.phase === "offer" && currentOffer && (
+          {game.phase === "offer" && currentOffer && !announcingOffer && (
             <>
               <OfferPanel
                 offer={currentOffer}
@@ -363,6 +389,15 @@ export default function Home() {
         casesToOpen={CASES_PER_ROUND[game.round - 1]}
         durationMs={Math.round(TIMING.roundIntroMs * speedScale)}
         onFinished={announceRoundDone}
+      />
+    )}
+
+    {announcingOffer && (
+      <BankerCall
+        key={game.round}
+        round={game.round}
+        durationMs={bankerCallMs}
+        onFinished={announceOfferDone}
       />
     )}
 
