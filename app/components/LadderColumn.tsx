@@ -31,8 +31,8 @@ export function LadderColumn({
                 : compact
                   ? "pr-1.5"
                   : "pr-2",
-              // A live rung is a cream prize tile; a struck one is just a
-              // ghost on the stage.
+              // A live rung is a cream card from the money board; a struck one
+              // drains away to nothing on the stage.
               gone ? "bg-transparent" : "bg-tile",
             ].join(" ")}
           >

@@ -47,17 +47,13 @@ export function CaseTile({
           arming ? "is-arming" : "",
         ].join(" ")}
       >
-        {/* Ink on the cream tile, and the case number punched dark into the
-            gold lid — both need to read against a light face now. */}
         <div className="case-face case-body">
-          {/* Sized to the tile it sits on. The widest string is the 1,000,000
-              board's top rung, which still clears a phone-width tile. */}
-          <span className="tabular text-[13px] leading-none font-semibold text-tile-ink sm:text-base">
+          <span className="tabular text-[11px] leading-none text-bone-dim sm:text-xs">
             {briefcase.opened ? formatPeso(briefcase.value) : ""}
           </span>
         </div>
         <div className="case-face case-lid">
-          <span className="tabular font-display text-2xl leading-none text-stage sm:text-3xl">
+          <span className="tabular font-display text-2xl leading-none text-bone/90 sm:text-3xl">
             {briefcase.id}
           </span>
         </div>
