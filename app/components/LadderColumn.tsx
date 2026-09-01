@@ -31,7 +31,9 @@ export function LadderColumn({
                 : compact
                   ? "pr-1.5"
                   : "pr-2",
-              gone ? "bg-transparent" : "bg-stage-lift/70",
+              // A live rung is a cream prize tile; a struck one is just a
+              // ghost on the stage.
+              gone ? "bg-transparent" : "bg-tile",
             ].join(" ")}
           >
             <span
@@ -48,7 +50,9 @@ export function LadderColumn({
               className={[
                 "tabular leading-none tracking-tight transition-colors duration-500",
                 compact ? "text-[11px]" : "text-[13px] sm:text-sm",
-                gone ? "text-bone-faint line-through" : "text-bone",
+                gone
+                  ? "text-bone-faint line-through"
+                  : "font-semibold text-tile-ink",
               ].join(" ")}
             >
               {formatPeso(value)}

@@ -1,25 +1,37 @@
 @import "tailwindcss";
 
 @theme {
-  /* Studio dark, with a blue cast — a lit stage, not a black page. */
-  --color-stage: #0b0e14;
-  --color-stage-lift: #151b26;
-  --color-stage-edge: #232c3b;
+  /*
+   * The televised set: an electric blue stage lit from above, gold, and the
+   * cream flip-tiles the prize board is made of.
+   */
+  --color-stage: #062a78;
+  --color-stage-lift: #0b3fa6;
+  --color-stage-edge: #2e6fe0;
 
-  /* Case metal. Restrained brass, not a bright gold. */
-  --color-brass: #c9a227;
-  --color-brass-hot: #f2d06b;
-  --color-brass-dim: #6b5a1f;
+  /* Broadcast gold. Bright, not the restrained brass this replaced. */
+  --color-brass: #ffd21e;
+  --color-brass-hot: #ffe879;
+  --color-brass-dim: #b8930a;
+
+  /*
+   * The prize tile: a cream card with near-black ink. This pair is the one
+   * thing on screen that must stay legible at 11px in the phone strip, which
+   * is why it is a solid card rather than the per-digit tiles of the real
+   * board — those turn to mush below about 20px.
+   */
+  --color-tile: #f2ecae;
+  --color-tile-ink: #14161c;
 
   /* An Offer going up or down. Never the only signal — always paired with
-     a direction arrow and a signed amount. */
-  --color-rise: #4fa97a;
-  --color-fall: #d9645a;
+     a direction arrow and a signed amount. Lifted to carry against blue. */
+  --color-rise: #4fd08a;
+  --color-fall: #ff7b6e;
 
-  /* Warm off-white — white glares against the stage. */
-  --color-bone: #ede8dc;
-  --color-bone-dim: #9aa1ae;
-  --color-bone-faint: #5b6474;
+  /* Cool white — a warm off-white goes muddy on blue. */
+  --color-bone: #f4f7ff;
+  --color-bone-dim: #b8cbf2;
+  --color-bone-faint: #7c9ddd;
 
   --font-display: var(--font-anton);
   --font-sans: var(--font-archivo);
@@ -51,13 +63,13 @@ body {
   background:
     radial-gradient(
       120% 80% at 50% -10%,
-      rgba(201, 162, 39, 0.11) 0%,
-      rgba(201, 162, 39, 0.03) 32%,
-      transparent 62%
+      rgba(126, 192, 255, 0.3) 0%,
+      rgba(62, 132, 234, 0.13) 34%,
+      transparent 64%
     ),
     radial-gradient(
       90% 70% at 50% 45%,
-      rgba(46, 111, 168, 0.09) 0%,
+      rgba(255, 210, 30, 0.06) 0%,
       transparent 70%
     );
 }
@@ -79,12 +91,13 @@ body {
   transition: opacity 2600ms ease-in-out;
 }
 
-/* Mostly big values left: the room cools. */
+/* Mostly big values left: the room cools. Indigo, not blue — the stage is
+   already blue, so a blue wash would be invisible. */
 .stage-wash::before {
   background: radial-gradient(
     110% 75% at 50% 35%,
-    rgba(46, 111, 168, 0.22) 0%,
-    rgba(46, 111, 168, 0.07) 45%,
+    rgba(26, 16, 112, 0.55) 0%,
+    rgba(18, 12, 84, 0.24) 45%,
     transparent 74%
   );
   opacity: var(--cool, 0);
@@ -94,17 +107,17 @@ body {
 .stage-wash::after {
   background: radial-gradient(
     110% 75% at 50% 35%,
-    rgba(179, 69, 58, 0.2) 0%,
-    rgba(201, 120, 39, 0.07) 45%,
+    rgba(206, 58, 40, 0.32) 0%,
+    rgba(228, 132, 28, 0.13) 45%,
     transparent 74%
   );
   opacity: var(--warm, 0);
 }
 
 /*
- * A Case is a lid over a body. The lid is brushed metal catching the key
- * light; the body is the dark interior holding the value. Opening rotates the
- * lid away on its top edge rather than swapping the face.
+ * A Case is a lid over a body. The lid is the gold of the set's cases catching
+ * the key light; the body is the cream prize tile holding the value. Opening
+ * rotates the lid away on its top edge rather than swapping the face.
  */
 .case-scene {
   perspective: 620px;
@@ -126,13 +139,18 @@ body {
   border-radius: 6px;
 }
 
-/* The interior, revealed as the lid swings up. */
+/*
+ * The interior: the prize tile itself. What the lid swings away to expose is
+ * the same cream card the Prize Ladder is built from, so an opened Case and
+ * the rung it struck through read as one object.
+ */
 .case-body {
-  background: linear-gradient(180deg, #0d1118 0%, #161d29 100%);
-  box-shadow: inset 0 6px 14px -4px rgba(0, 0, 0, 0.95);
+  background: linear-gradient(180deg, #fbf7cf 0%, #ece3a0 100%);
+  box-shadow: inset 0 6px 14px -4px rgba(96, 76, 0, 0.4);
   transition: box-shadow var(--lid-ms, 650ms) ease-out;
 }
 
+/* The lid is the gold of the set's cases, lit from the upper left. */
 .case-lid {
   transform-origin: 50% 0%;
   transform: rotateX(0deg);
@@ -140,16 +158,16 @@ body {
   background:
     linear-gradient(
       160deg,
-      rgba(255, 255, 255, 0.14) 0%,
-      rgba(255, 255, 255, 0.03) 22%,
-      rgba(0, 0, 0, 0.22) 68%,
-      rgba(0, 0, 0, 0.4) 100%
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.08) 24%,
+      rgba(120, 78, 0, 0.16) 70%,
+      rgba(92, 60, 0, 0.34) 100%
     ),
-    linear-gradient(180deg, #2b3444 0%, #1b2230 55%, #131924 100%);
+    linear-gradient(180deg, #ffd94a 0%, #f0b91c 55%, #c98f08 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
-    0 10px 22px -12px rgba(0, 0, 0, 0.9);
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(110, 72, 0, 0.5),
+    0 10px 22px -12px rgba(0, 10, 45, 0.85);
   transition:
     transform var(--lid-ms, 650ms) cubic-bezier(0.34, 0.8, 0.28, 1),
     box-shadow var(--lid-ms, 650ms) ease-out;
@@ -165,7 +183,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(242, 208, 107, 0.28),
+    rgba(255, 232, 121, 0.5),
     transparent
   );
 }
@@ -174,14 +192,14 @@ body {
 .case-3d.is-open .case-lid {
   transform: rotateX(-118deg);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 2px 6px -2px rgba(0, 0, 0, 0.9);
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 2px 6px -2px rgba(0, 10, 45, 0.9);
 }
 
 .case-3d.is-open .case-body {
   box-shadow:
-    inset 0 10px 18px -6px rgba(0, 0, 0, 0.98),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    inset 0 10px 18px -6px rgba(96, 76, 0, 0.45),
+    inset 0 0 0 1px rgba(120, 96, 0, 0.25);
 }
 
 /*
@@ -189,9 +207,13 @@ body {
  * board never shifts — the player has been reading these positions all game.
  */
 .case-socket {
-  border: 1px dashed rgba(201, 162, 39, 0.35);
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.2));
-  box-shadow: inset 0 4px 12px -4px rgba(0, 0, 0, 0.9);
+  border: 1px dashed rgba(255, 210, 30, 0.5);
+  background: linear-gradient(
+    180deg,
+    rgba(2, 14, 52, 0.55),
+    rgba(2, 14, 52, 0.25)
+  );
+  box-shadow: inset 0 4px 12px -4px rgba(0, 8, 36, 0.85);
 }
 
 /* Armed: the beat before the lid moves. */
@@ -211,10 +233,10 @@ body {
 
 .case-3d.is-arming .case-lid {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    0 0 0 1px rgba(242, 208, 107, 0.55),
-    0 0 22px 2px rgba(242, 208, 107, 0.35),
-    0 10px 22px -12px rgba(0, 0, 0, 0.9);
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 0 0 2px rgba(255, 255, 255, 0.8),
+    0 0 26px 3px rgba(255, 232, 121, 0.6),
+    0 10px 22px -12px rgba(0, 10, 45, 0.9);
 }
 
 /*
@@ -233,8 +255,8 @@ body {
   opacity: 0;
   background: radial-gradient(
     circle,
-    rgba(242, 208, 107, 0.22) 0%,
-    rgba(242, 208, 107, 0.08) 38%,
+    rgba(255, 232, 121, 0.3) 0%,
+    rgba(255, 232, 121, 0.1) 38%,
     transparent 68%
   );
   transition:
@@ -270,7 +292,7 @@ body {
       circle at 50% 45%,
       transparent 18%,
       rgba(179, 69, 58, 0.4) 62%,
-      rgba(11, 14, 20, 0.86) 100%
+      rgba(1, 8, 32, 0.9) 100%
     );
   animation: fx-high calc(var(--fx-ms, 900ms) * 1.5) ease-out forwards;
 }
@@ -295,7 +317,7 @@ body {
   background: radial-gradient(
     circle at 50% 55%,
     rgba(79, 169, 122, 0.34) 0%,
-    rgba(237, 232, 220, 0.12) 35%,
+    rgba(244, 247, 255, 0.14) 35%,
     transparent 68%
   );
   animation: fx-low calc(var(--fx-ms, 900ms) * 0.7) ease-out forwards;
@@ -321,7 +343,7 @@ body {
 .reveal-fx.tier-medium.variant-0 {
   background: linear-gradient(
     90deg,
-    rgba(46, 111, 168, 0.26),
+    rgba(150, 205, 255, 0.24),
     transparent 55%
   );
 }
@@ -329,7 +351,7 @@ body {
 .reveal-fx.tier-medium.variant-1 {
   background: linear-gradient(
     270deg,
-    rgba(139, 107, 168, 0.26),
+    rgba(178, 140, 255, 0.26),
     transparent 55%
   );
 }
@@ -337,7 +359,7 @@ body {
 .reveal-fx.tier-medium.variant-2 {
   background: radial-gradient(
     circle at 50% 50%,
-    rgba(201, 162, 39, 0.2) 0%,
+    rgba(255, 210, 30, 0.24) 0%,
     transparent 60%
   );
 }
@@ -345,7 +367,7 @@ body {
 .reveal-fx.tier-medium.variant-3 {
   background: linear-gradient(
     180deg,
-    rgba(122, 132, 150, 0.28),
+    rgba(196, 214, 255, 0.26),
     transparent 60%
   );
 }
@@ -371,9 +393,9 @@ body {
   pointer-events: none;
   background: radial-gradient(
     circle at 50% 50%,
-    rgba(11, 14, 20, 0.92) 0%,
-    rgba(11, 14, 20, 0.72) 55%,
-    rgba(11, 14, 20, 0.4) 100%
+    rgba(2, 12, 46, 0.94) 0%,
+    rgba(2, 12, 46, 0.78) 55%,
+    rgba(2, 12, 46, 0.5) 100%
   );
   animation: round-intro-wash var(--intro-ms, 1700ms) ease-out forwards;
 }
@@ -410,9 +432,9 @@ body {
   pointer-events: none;
   background: radial-gradient(
     circle at 50% 50%,
-    rgba(11, 14, 20, 0.94) 0%,
-    rgba(11, 14, 20, 0.8) 55%,
-    rgba(11, 14, 20, 0.5) 100%
+    rgba(2, 12, 46, 0.95) 0%,
+    rgba(2, 12, 46, 0.84) 55%,
+    rgba(2, 12, 46, 0.58) 100%
   );
   animation: banker-call-wash var(--call-ms, 2600ms) ease-out forwards;
 }
